@@ -79,9 +79,14 @@ export function ChanceBadge({ chance, tone }) {
     match: 'bg-amber-100 text-amber-700',
     dream: 'bg-rose-100 text-rose-700',
   }
+  const labels = {
+    safe: 'High',
+    match: 'Moderate',
+    dream: 'Low',
+  }
   return (
-    <span className={`inline-flex min-w-[72px] items-center justify-center rounded-full px-3 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${classes[tone]}`}>
-      {chance}%
+    <span className={`inline-flex min-w-[64px] items-center justify-center rounded-full px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] ${classes[tone]}`}>
+      {labels[tone]}
     </span>
   )
 }

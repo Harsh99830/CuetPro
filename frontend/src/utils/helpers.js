@@ -214,14 +214,23 @@ export function readSubjectEntries(subjects) {
     const { subject, marks } = subjects[i]
     const hasSubjectValue = Boolean(subject)
     const hasMarks = marks !== ''
-    if (i === 0 && (!hasSubjectValue || !hasMarks)) throw new Error('Subject 1 and its marks are compulsory.')
-    if (i > 0 && (!hasSubjectValue || !hasMarks)) throw new Error(`Subject ${i + 1} and its marks are compulsory.`)
+
+    // Skip completely empty rows
+    if (!hasSubjectValue && !hasMarks) continue
+
+    // If subject selected, marks must be present
+    if (hasSubjectValue && !hasMarks) throw new Error(`Marks are required for Subject ${i + 1}.`)
+
+    // If marks entered without subject, ignore the marks
+    if (!hasSubjectValue && hasMarks) continue
+
     if (seen.has(subject)) throw new Error(`Subject ${subject} has been selected more than once.`)
     seen.add(subject)
     const numericMarks = Number(marks)
     if (!Number.isFinite(numericMarks) || numericMarks < 0 || numericMarks > 250) throw new Error(`Marks for Subject ${i + 1} must be between 0 and 250.`)
     entries.push({ subject, marks: numericMarks })
   }
+  if (!entries.length) throw new Error('Please select at least one subject with marks.')
   return entries
 }
 

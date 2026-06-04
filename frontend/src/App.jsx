@@ -33,6 +33,7 @@ function App() {
   const [lastMobileNumber, setLastMobileNumber] = useState('')
   const [exportReady, setExportReady] = useState(false)
   const mobileRef = useRef('')
+  const resultsSectionRef = useRef(null)
 
   // ── Derived data ────────────────────────────────────────────────────────────
 
@@ -99,7 +100,11 @@ function App() {
   const selectedSubjectCount = selectedSubjectNames.length
   const profileReady = Boolean(form.name.trim()) && Boolean(form.gender) && Boolean(form.category) && Boolean(form.stream)
   const canBuildPreferences = profileReady && selectedSubjectCount > 0
-  const canGenerate = canBuildPreferences && preferences.length > 0
+  const hasMarksErrors = subjects.some(
+    (s) => (s.subject && s.marks === '') || (s.marks !== '' && Number(s.marks) > 250)
+  )
+  const hasAtLeastOneSubject = subjects.some((s) => s.subject && s.marks !== '')
+  const canGenerate = canBuildPreferences && preferences.length > 0 && !hasMarksErrors && hasAtLeastOneSubject
 
   const estimatedScore = useMemo(() => {
     try { return `${computeStudentScore(readSubjectEntries(subjects))}/1000` }
@@ -120,8 +125,6 @@ function App() {
       try {
         await Promise.allSettled([
           loadScript('https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js'),
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js'),
-          loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'),
         ])
         const requirementData = Array.isArray(courseRequirementsData) ? courseRequirementsData : null
         const cutoffData = Array.isArray(duCutoffsData) ? duCutoffsData : null
@@ -235,6 +238,7 @@ function App() {
     setExportReady(orderedPossible.length > 0)
     setLocked(orderedPossible.length > 0)
     setResultRows(orderedPossible)
+    setTimeout(() => resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
   }
 
   function handleReset() {
@@ -308,14 +312,15 @@ function App() {
           </form>
         </section>
 
-        <ResultsSection
-          resultRows={resultRows}
-          setResultRows={setResultRows}
-          summary={summary}
-          exportReady={exportReady}
-          onExcelExport={exportToExcel}
-          onPdfExport={exportToPdf}
-        />
+        <div ref={resultsSectionRef}>
+          <ResultsSection
+            resultRows={resultRows}
+            setResultRows={setResultRows}
+            summary={summary}
+            exportReady={exportReady}
+            studentName={lastStudentName}
+          />
+        </div>
 
         <WhatsAppButton />
         <SiteFooter />

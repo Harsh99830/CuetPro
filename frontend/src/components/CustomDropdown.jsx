@@ -113,7 +113,7 @@ export function SelectField({ label, value, onChange, options, required = false 
   return (
     <label className="grid gap-2 text-sm font-medium uppercase tracking-[0.12em] text-[#667085]">
       {label}
-      <CustomDropdown value={value} onChange={onChange} options={normalizedOptions} required={required} placeholder="Select" />
+      <CustomDropdown value={value} onChange={onChange} options={normalizedOptions} required={required} placeholder="Select" searchable={false} />
     </label>
   )
 }
