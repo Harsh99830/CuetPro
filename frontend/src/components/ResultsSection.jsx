@@ -4,6 +4,7 @@ import autoTable from 'jspdf-autotable'
 import { ChanceBadge, CollegeCell } from './UI'
 import { chanceBadgeClass, getCampusLabel, formatCollegeDisplay, sanitizeFileName } from '../utils/helpers'
 import { addToListButtonClass } from '../utils/styles'
+import { supabase } from '../utils/supabase'
 
 const PAGE_SIZE = 30
 
@@ -11,8 +12,11 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
   const [draggedIndex, setDraggedIndex] = useState(null)
   const [page, setPage] = useState(0)
   const [showModal, setShowModal] = useState(false)
+  const [isDownloading, setIsDownloading] = useState(false)
   const [mobile, setMobile] = useState('')
   const [mobileError, setMobileError] = useState('')
+  const [userName, setUserName] = useState('')
+  const [nameError, setNameError] = useState('')
 
   if (!summary && !resultRows.length) return null
 
@@ -27,6 +31,8 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
   function handleDownloadClick() {
     setMobile('')
     setMobileError('')
+    setUserName('')
+    setNameError('')
     setShowModal(true)
   }
 
@@ -36,13 +42,39 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
     if (mobileError) setMobileError('')
   }
 
-  function handleConfirm() {
+  async function handleConfirm() {
+    let hasError = false
+    if (!userName.trim()) {
+      setNameError('Please enter your name.')
+      hasError = true
+    }
     if (!/^\d{10}$/.test(mobile)) {
       setMobileError('Please enter a valid 10-digit mobile number.')
-      return
+      hasError = true
     }
+    if (hasError) return
+
+    setIsDownloading(true)
     setShowModal(false)
+
+    // Save lead to Supabase
+    if (supabase) {
+      try {
+        await supabase.from('pdf_leads').insert([{
+          name: userName.trim(),
+          mobile,
+          student_name: studentName || null,
+          downloaded_at: new Date().toISOString(),
+        }])
+      } catch (err) {
+        console.error('Supabase insert error:', err)
+      }
+    }
+
+    // small delay so loading spinner is visible
+    await new Promise((resolve) => setTimeout(resolve, 600))
     triggerPdfDownload()
+    setIsDownloading(false)
   }
 
   function addWatermarkToAllPages(doc) {
@@ -93,23 +125,31 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-[0_24px_48px_rgba(0,0,0,0.18)]">
-            <h3 className="mb-1 text-lg font-semibold text-[#101828]">Enter Mobile Number</h3>
-            <p className="mb-5 text-sm text-[#667085]">Your number will be used for communication purposes only.</p>
+            <h3 className="mb-1 text-lg font-semibold text-[#101828]">Enter Your Details</h3>
+            <p className="mb-5 text-sm text-[#667085]">Your details will be used for communication purposes only.</p>
 
-            <input
-              type="tel"
-              inputMode="numeric"
-              maxLength={10}
-              placeholder="10-digit mobile number"
-              value={mobile}
-              onChange={handleMobileChange}
-              onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
-              autoFocus
-              className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
-            />
-            {mobileError && (
-              <p className="mt-2 text-[12px] font-medium text-red-500">{mobileError}</p>
-            )}
+            <div className="grid gap-3">
+              <input
+                type="text"
+                placeholder="Your name"
+                value={userName}
+                onChange={(e) => { setUserName(e.target.value); if (nameError) setNameError('') }}
+                className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
+              />
+              {nameError && <p className="-mt-2 text-[12px] font-medium text-red-500">{nameError}</p>}
+
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="10-digit mobile number"
+                value={mobile}
+                onChange={handleMobileChange}
+                onKeyDown={(e) => e.key === 'Enter' && handleConfirm()}
+                className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
+              />
+              {mobileError && <p className="-mt-2 text-[12px] font-medium text-red-500">{mobileError}</p>}
+            </div>
 
             <div className="mt-5 flex gap-3">
               <button
@@ -122,9 +162,9 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="flex-1 rounded-2xl bg-[#0c2754] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0a2146]"
+                className="flex-1 items-center justify-center rounded-2xl bg-[#0c2754] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0a2146]"
               >
-                Confirm & Download
+                Download
               </button>
             </div>
           </div>
@@ -142,11 +182,21 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
-              className={addToListButtonClass}
-              disabled={!exportReady}
+              className={`${addToListButtonClass} flex items-center gap-2`}
+              disabled={!exportReady || isDownloading}
               onClick={handleDownloadClick}
             >
-              Download PDF
+              {isDownloading ? (
+                <>
+                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                  </svg>
+                  Preparing...
+                </>
+              ) : (
+                'Download PDF'
+              )}
             </button>
           </div>
         </div>
