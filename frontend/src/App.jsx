@@ -437,6 +437,33 @@ function readEmbeddedJson(id) {
   }
 }
 
+function flattenOptions(options = []) {
+  return options.flatMap((option) => {
+    if (option?.type === 'group') {
+      return option.options || []
+    }
+    return option
+  })
+}
+
+function filterDropdownOptions(options = [], query = '') {
+  const normalizedQuery = query.trim().toLowerCase()
+  if (!normalizedQuery) return options
+
+  return options
+    .map((option) => {
+      if (option?.type === 'group') {
+        const filteredGroupOptions = (option.options || []).filter((item) =>
+          item.label.toLowerCase().includes(normalizedQuery),
+        )
+        return filteredGroupOptions.length ? { ...option, options: filteredGroupOptions } : null
+      }
+
+      return option.label.toLowerCase().includes(normalizedQuery) ? option : null
+    })
+    .filter(Boolean)
+}
+
 function App() {
   const [form, setForm] = useState(initialForm)
   const [subjects, setSubjects] = useState(initialSubjects)
@@ -883,7 +910,7 @@ function App() {
                 title="CUET Subjects"
                 note="Minimum 1 subject required for initial suggestions"
               >
-              <div className="grid gap-0 overflow-hidden rounded-[20px] border border-[#eef2f6]">
+              <div className="grid gap-0 rounded-[20px] border border-[#eef2f6]">
                 {subjects.map((item, index) => {
                   const selectedElsewhere = subjects
                     .map((subjectItem, subjectIndex) =>
@@ -894,7 +921,7 @@ function App() {
                   return (
                     <div
                       key={item.label}
-                      className="grid gap-3 border-b border-[#eef2f6] bg-white px-4 py-4 last:border-b-0 lg:grid-cols-[70px_minmax(0,1fr)_minmax(100px,140px)]"
+                      className="grid gap-3 border-b border-[#eef2f6] bg-white px-4 py-4 last:border-b-0 lg:grid-cols-[70px_minmax(0,1fr)_minmax(150px,170px)]"
                     >
                       <span className="self-center text-[11px] font-semibold uppercase tracking-[0.18em] text-[#98a2b3]">
                         S - 0{index + 1}
@@ -902,53 +929,47 @@ function App() {
                       <label className="sr-only" htmlFor={`subject-${index + 1}`}>
                         {item.label}
                       </label>
-                      <select
+                      <CustomDropdown
                         id={`subject-${index + 1}`}
-                        className={inputClass}
+                        placeholder={index === 0 ? 'Select subject (Required*)' : 'Select subject'}
                         required={index === 0}
+                        options={[
+                          {
+                            type: 'group',
+                            label: 'Languages',
+                            options: languages
+                              .filter(
+                                (subject) =>
+                                  subject === item.subject || !selectedElsewhere.includes(subject),
+                              )
+                              .map((subject) => ({ label: subject, value: subject })),
+                          },
+                          {
+                            type: 'group',
+                            label: 'Domain Subjects',
+                            options: domainSubjects
+                              .filter(
+                                (subject) =>
+                                  subject === item.subject || !selectedElsewhere.includes(subject),
+                              )
+                              .map((subject) => ({ label: subject, value: subject })),
+                          },
+                          {
+                            type: 'group',
+                            label: 'General Tests',
+                            options: generalTests
+                              .filter(
+                                (subject) =>
+                                  subject === item.subject || !selectedElsewhere.includes(subject),
+                              )
+                              .map((subject) => ({ label: subject, value: subject })),
+                          },
+                        ]}
                         value={item.subject}
                         onChange={(event) => updateSubject(index, 'subject', event.target.value)}
-                      >
-                        <option value="">{index === 0 ? 'Select subject (Required*)' : 'Select subject'}</option>
-                        <optgroup label="Languages">
-                          {languages
-                            .filter(
-                              (subject) =>
-                                subject === item.subject || !selectedElsewhere.includes(subject),
-                            )
-                            .map((subject) => (
-                              <option key={subject} value={subject}>
-                                {subject}
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="Domain Subjects">
-                          {domainSubjects
-                            .filter(
-                              (subject) =>
-                                subject === item.subject || !selectedElsewhere.includes(subject),
-                            )
-                            .map((subject) => (
-                              <option key={subject} value={subject}>
-                                {subject}
-                              </option>
-                            ))}
-                        </optgroup>
-                        <optgroup label="General Tests">
-                          {generalTests
-                            .filter(
-                              (subject) =>
-                                subject === item.subject || !selectedElsewhere.includes(subject),
-                            )
-                            .map((subject) => (
-                              <option key={subject} value={subject}>
-                                {subject}
-                              </option>
-                            ))}
-                        </optgroup>
-                      </select>
+                      />
                       <input
-                        className={inputClass}
+                        className={marksInputClass}
                         type="number"
                         min="0"
                         max="250"
@@ -968,25 +989,17 @@ function App() {
                 note="Search & select course"
               >
               <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto_auto]">
-                <select
-                  className={inputClass}
+                <CustomDropdown
                   value={selectedCourse}
                   onChange={(event) => setSelectedCourse(event.target.value)}
                   disabled={locked || !remainingCourses.length}
-                >
-                  {!remainingCourses.length ? (
-                    <option value="">
-                      {selectedSubjectNames.length
-                        ? 'No more eligible courses available'
-                        : statusMessage}
-                    </option>
-                  ) : null}
-                  {remainingCourses.map((course) => (
-                    <option key={course} value={course}>
-                      {course}
-                    </option>
-                  ))}
-                </select>
+                  placeholder={
+                    selectedSubjectNames.length
+                      ? 'No more eligible courses available'
+                      : statusMessage
+                  }
+                  options={remainingCourses.map((course) => ({ label: course, value: course }))}
+                />
                 <button
                   type="button"
                   className={softButtonClass}
@@ -1324,7 +1337,7 @@ function MetricCard({ label, value, icon }) {
 
 function PanelSection({ title, note, children }) {
   return (
-    <section className="min-w-0 overflow-hidden rounded-[24px] border border-[#e4e7ec] bg-white">
+    <section className="min-w-0 rounded-[24px] border border-[#e4e7ec] bg-white">
       <div className="flex flex-col gap-2 border-b border-[#eef2f6] px-5 py-4 lg:flex-row lg:items-center lg:justify-between">
         <h3 className="text-[22px] font-semibold text-[#101828]">{title}</h3>
         {note ? <p className="text-xs text-[#98a2b3]">{note}</p> : null}
@@ -1350,15 +1363,165 @@ function SelectField({ label, value, onChange, options, required = false }) {
 
   return (
     <Field label={label}>
-      <select className={inputClass} required={required} value={value} onChange={onChange}>
-        <option value="">Select</option>
-        {normalizedOptions.map((option) => (
-          <option key={option.value} value={option.value}>
-            {option.label}
-          </option>
-        ))}
-      </select>
+      <CustomDropdown
+        value={value}
+        onChange={onChange}
+        options={normalizedOptions}
+        required={required}
+        placeholder="Select"
+      />
     </Field>
+  )
+}
+
+function CustomDropdown({
+  id,
+  value,
+  onChange,
+  options,
+  placeholder = 'Select',
+  required = false,
+  disabled = false,
+}) {
+  const [open, setOpen] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const wrapperRef = useRef(null)
+  const searchInputRef = useRef(null)
+  const flatOptions = flattenOptions(options)
+  const filteredOptions = filterDropdownOptions(options, searchTerm)
+  const filteredFlatOptions = flattenOptions(filteredOptions)
+  const selectedOption = flatOptions.find((option) => option.value === value)
+
+  useEffect(() => {
+    function handleOutsideClick(event) {
+      if (!wrapperRef.current?.contains(event.target)) {
+        setOpen(false)
+      }
+    }
+
+    function handleEscape(event) {
+      if (event.key === 'Escape') {
+        setOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleOutsideClick)
+    document.addEventListener('keydown', handleEscape)
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick)
+      document.removeEventListener('keydown', handleEscape)
+    }
+  }, [])
+
+  useEffect(() => {
+    if (disabled) {
+      setOpen(false)
+    }
+  }, [disabled])
+
+  useEffect(() => {
+    if (!open) {
+      setSearchTerm('')
+      return
+    }
+
+    requestAnimationFrame(() => searchInputRef.current?.focus())
+  }, [open])
+
+  function handleSelect(nextValue) {
+    onChange({ target: { value: nextValue } })
+    setOpen(false)
+  }
+
+  return (
+    <div ref={wrapperRef} className={`relative ${open ? 'z-[90]' : 'z-10'}`}>
+      <input id={id} tabIndex={-1} className="sr-only" value={value} onChange={() => {}} required={required} />
+      <button
+        type="button"
+        disabled={disabled}
+        onClick={() => setOpen((current) => !current)}
+        className={`${dropdownTriggerClass} ${open ? 'border-[#98b8f8] ring-4 ring-[#3b82f6]/10' : ''} ${disabled ? 'cursor-not-allowed opacity-60' : ''}`}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+      >
+        <span className={`truncate text-left ${selectedOption ? 'text-[#101828]' : 'text-[#98a2b3]'}`}>
+          {selectedOption?.label || placeholder}
+        </span>
+        <span className={`shrink-0 text-[#98a2b3] transition-transform ${open ? 'rotate-180' : ''}`}>
+          <svg viewBox="0 0 20 20" className="h-5 w-5 fill-current" aria-hidden="true">
+            <path d="M5.5 7.5 10 12l4.5-4.5 1.5 1.5-6 6-6-6z" />
+          </svg>
+        </span>
+      </button>
+
+      {open ? (
+        <div className={dropdownPanelClass}>
+          <div className="border-b border-[#eef2f6] p-2">
+            <input
+              ref={searchInputRef}
+              className="w-full rounded-2xl border border-[#dbe3f0] bg-[#f8fafc] px-3 py-2.5 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:bg-white focus:ring-4 focus:ring-[#3b82f6]/10"
+              placeholder="Search..."
+              value={searchTerm}
+              onChange={(event) => setSearchTerm(event.target.value)}
+            />
+          </div>
+          <div className="max-h-72 overflow-y-auto p-2">
+            {filteredOptions.map((option) =>
+              option?.type === 'group' ? (
+                <div key={option.label} className="mb-2 last:mb-0">
+                  <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#98a2b3]">
+                    {option.label}
+                  </div>
+                  <div className="grid gap-1">
+                    {option.options.map((item) => (
+                      <DropdownOption
+                        key={item.value}
+                        selected={item.value === value}
+                        onClick={() => handleSelect(item.value)}
+                      >
+                        {item.label}
+                      </DropdownOption>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <DropdownOption
+                  key={option.value}
+                  selected={option.value === value}
+                  onClick={() => handleSelect(option.value)}
+                >
+                  {option.label}
+                </DropdownOption>
+              ),
+            )}
+            {!flatOptions.length ? (
+              <div className="px-3 py-3 text-sm text-[#98a2b3]">{placeholder}</div>
+            ) : null}
+            {flatOptions.length && !filteredFlatOptions.length ? (
+              <div className="px-3 py-3 text-sm text-[#98a2b3]">No matching options</div>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function DropdownOption({ children, selected, onClick }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm transition ${
+        selected
+          ? 'bg-[#eff6ff] font-medium text-[#2563eb]'
+          : 'text-[#101828] hover:bg-[#f8fafc]'
+      }`}
+    >
+      <span className="truncate">{children}</span>
+      {selected ? <span className="ml-3 text-xs font-semibold uppercase tracking-[0.12em]">Selected</span> : null}
+    </button>
   )
 }
 
@@ -1407,6 +1570,15 @@ function CollegeCell({ college, campus }) {
 
 const inputClass =
   'w-full min-w-0 rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm normal-case tracking-normal text-[#101828] outline-none transition focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10'
+
+const marksInputClass =
+  'w-full min-w-0 rounded-2xl border border-[#dbe3f0] bg-white px-3 py-3 text-[13px] normal-case tracking-normal text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10 sm:text-sm'
+
+const dropdownTriggerClass =
+  'flex min-h-[50px] w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm normal-case tracking-normal text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-[#bfd2ee] hover:bg-[#fcfdff] focus:outline-none'
+
+const dropdownPanelClass =
+  'absolute left-0 right-0 top-[calc(100%+8px)] z-30 overflow-hidden rounded-[20px] border border-[#344054] bg-white shadow-[0_20px_40px_rgba(16,24,40,0.12)]'
 
 const primaryButtonClass =
   'rounded-xl bg-[#0c2754] px-4 py-3 text-sm font-semibold text-white shadow-[0_8px_20px_rgba(37,99,235,0.15)] transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-55 disabled:shadow-none'
