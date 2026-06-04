@@ -795,8 +795,8 @@ function App() {
   }
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-white px-4 py-6 text-[#101828] sm:px-6 sm:py-8">
-      <div className="mx-auto flex w-full min-w-0 max-w-5xl flex-col gap-6">
+    <main className="min-h-screen w-full overflow-x-hidden bg-white px-3 py-6 text-[#101828] sm:px-4 sm:py-8 lg:px-6">
+      <div className="mx-auto flex w-full min-w-0 max-w-7xl flex-col gap-6">
         <header className="flex min-w-0 items-start gap-4">
           <img
             src="/cuet-pro-logo.png"
@@ -814,10 +814,10 @@ function App() {
         </header>
 
         <section className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="clipboard" />
-          <MetricCard label="Preferences" value={String(preferences.length)} icon="building" />
-          <MetricCard label="Estimated Score" value={estimatedScore} icon="trend" />
-          <MetricCard label="Generated Rows" value={String(resultRows.length)} icon="list" />
+          <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="subjects" />
+          <MetricCard label="Preferences" value={String(preferences.length)} icon="preferences" />
+          <MetricCard label="Estimated Score" value={estimatedScore} icon="score" />
+          <MetricCard label="Generated Rows" value={String(resultRows.length)} icon="generated-rows" />
         </section>
 
         <section className="min-w-0 rounded-[24px] border border-[#e4e7ec] bg-white shadow-[0_8px_24px_rgba(16,24,40,0.05)]">
@@ -1221,19 +1221,69 @@ function formatCollegeDisplay(college, campus) {
 }
 
 function MetricIcon({ type }) {
+  if (type === 'subjects') {
+    return (
+      <div className="mb-2 flex h-9 w-9 items-center justify-center">
+        <img
+          src="/subjects-icon.png"
+          alt=""
+          className="h-9 w-9 object-contain"
+          aria-hidden
+        />
+      </div>
+    )
+  }
+
+  if (type === 'preferences') {
+    return (
+      <div className="mb-2 flex h-9 w-9 items-center justify-center">
+        <img
+          src="/preferences-icon.png"
+          alt=""
+          className="h-9 w-9 object-contain"
+          aria-hidden
+        />
+      </div>
+    )
+  }
+
+  if (type === 'score') {
+    return (
+      <div className="mb-2 flex h-9 w-9 items-center justify-center">
+        <img
+          src="/score-icon.png"
+          alt=""
+          className="h-9 w-9 object-contain"
+          aria-hidden
+        />
+      </div>
+    )
+  }
+
+  if (type === 'generated-rows') {
+    return (
+      <div className="mb-2 flex h-9 w-9 items-center justify-center">
+        <img
+          src="/generated-rows-icon.png"
+          alt=""
+          className="h-9 w-9 object-contain"
+          aria-hidden
+        />
+      </div>
+    )
+  }
+
   const styles = {
-    clipboard: { ring: 'bg-[#eef4ff]', stroke: '#2563eb' },
-    building: { ring: 'bg-[#f4ebff]', stroke: '#9333ea' },
     trend: { ring: 'bg-[#ecfdf3]', stroke: '#16a34a' },
     list: { ring: 'bg-[#fff7ed]', stroke: '#f97316' },
   }
   const { ring, stroke } = styles[type]
 
   return (
-    <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-full ${ring}`}>
+    <div className={`mb-2 flex h-9 w-9 items-center justify-center rounded-full ${ring}`}>
       <svg
-        width="20"
-        height="20"
+        width="16"
+        height="16"
         viewBox="0 0 24 24"
         fill="none"
         stroke={stroke}
@@ -1242,19 +1292,6 @@ function MetricIcon({ type }) {
         strokeLinejoin="round"
         aria-hidden
       >
-        {type === 'clipboard' ? (
-          <>
-            <path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2" />
-            <rect x="9" y="3" width="6" height="4" rx="1" />
-            <path d="M9 12h6M9 16h6" />
-          </>
-        ) : null}
-        {type === 'building' ? (
-          <>
-            <path d="M3 10.5 12 4l9 6.5V20a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-9.5z" />
-            <path d="M9 21V12h6v9" />
-          </>
-        ) : null}
         {type === 'trend' ? (
           <>
             <path d="M4 16 9 11l4 4 7-9" />
@@ -1273,12 +1310,12 @@ function MetricIcon({ type }) {
 
 function MetricCard({ label, value, icon }) {
   return (
-    <article className="rounded-[22px] border border-[#e4e7ec] bg-white p-5 shadow-[0_8px_18px_rgba(16,24,40,0.04)]">
+    <article className="rounded-2xl border border-[#e4e7ec] bg-white px-3.5 py-3 shadow-[0_4px_12px_rgba(16,24,40,0.04)]">
       <MetricIcon type={icon} />
-      <span className="mb-1 block text-[11px] font-medium uppercase tracking-[0.2em] text-[#667085]">
+      <span className="mb-0.5 block text-[10px] font-medium uppercase tracking-[0.16em] text-[#667085]">
         {label}
       </span>
-      <strong className="block text-3xl font-semibold leading-none text-[#101828] sm:text-4xl">
+      <strong className="block text-2xl font-semibold leading-none text-[#101828]">
         {value}
       </strong>
     </article>
