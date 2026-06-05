@@ -73,7 +73,7 @@ function App() {
     [streamCourses],
   )
 
-  function isCourseEligible(course, subjectNames) {
+  const isCourseEligible = useMemo(() => (course, subjectNames) => {
     if (!subjectNames.length) return false
     if (!courseRequirementIndex.size) return true
     const eligibility = courseRequirementIndex.get(normalizeCourseName(course))
@@ -84,17 +84,18 @@ function App() {
       .filter(Boolean)
     if (!segments.length) return false
     return segments.some((seg) => evaluateCombinationRule(seg, subjectNames))
-  }
+  }, [courseRequirementIndex])
 
   const availableCourses = useMemo(() => {
-    const base = form.stream && streamCourses[form.stream]?.length ? streamCourses[form.stream] : allCourses
-    return base
+    // Match HTML behaviour exactly: filter only by eligibility, stream is NOT
+    // used to filter the course dropdown (only used at generate time).
+    return allCourses
       .filter((course) => isCourseEligible(course, selectedSubjectNames))
       .sort((a, b) => {
         const diff = scoreCoursePreferenceOrder(b, selectedSubjectNames) - scoreCoursePreferenceOrder(a, selectedSubjectNames)
         return diff !== 0 ? diff : a.localeCompare(b)
       })
-  }, [allCourses, form.stream, selectedSubjectNames, streamCourses, courseRequirementIndex])
+  }, [allCourses, selectedSubjectNames, isCourseEligible])
 
   const remainingCourses = availableCourses.filter((c) => !preferences.includes(c))
 
@@ -111,10 +112,18 @@ function App() {
 
   // ── Effects ─────────────────────────────────────────────────────────────────
 
+  // Whenever the eligible course list changes (subjects added/removed/swapped),
+  // drop stale preferences and sync the picker — all in one atomic update.
   useEffect(() => {
-    const nextAvailable = availableCourses.filter((c) => !preferences.includes(c))
-    setSelectedCourse((current) => (current && nextAvailable.includes(current) ? current : nextAvailable[0] || ''))
-  }, [availableCourses, preferences])
+    setPreferences((prev) => {
+      const next = prev.filter((c) => availableCourses.includes(c))
+      const remaining = availableCourses.filter((c) => !next.includes(c))
+      setSelectedCourse((current) => (
+        current && remaining.includes(current) ? current : remaining[0] || ''
+      ))
+      return next
+    })
+  }, [availableCourses])
 
   useEffect(() => { mobileRef.current = lastMobileNumber }, [lastMobileNumber])
 
@@ -153,10 +162,8 @@ function App() {
   function updateSubject(index, field, value) {
     setSubjects((current) => {
       const next = current.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-      if (field === 'subject') {
-        const valid = next.map((item) => item.subject).filter(Boolean)
-        setPreferences((existing) => existing.filter((c) => isCourseEligible(c, valid)))
-      }
+      // Preference filtering now happens reactively via the availableCourses effect,
+      // so we don't need to do it here (avoids stale-closure bugs).
       return next
     })
     setLocked(false)

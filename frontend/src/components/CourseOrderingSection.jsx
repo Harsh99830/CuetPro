@@ -9,19 +9,19 @@ export function CourseOrderingSection({
   canBuildPreferences,
 }) {
   return (
-    <PanelSection title="Course Selection & Ordering" note="Search & select course">
+    <PanelSection title="Course Selection & Ordering" note="Complete Student Details and select your subjects — eligible courses appear automatically.">
       <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
         <CustomDropdown
           value={selectedCourse}
           onChange={(e) => onCourseChange(e.target.value)}
-          disabled={locked || !remainingCourses.length}
-          placeholder={selectedSubjectNames.length ? 'No more eligible courses available' : statusMessage}
+          disabled={!canBuildPreferences || locked || !remainingCourses.length}
+          placeholder={!canBuildPreferences ? 'Complete Student Details first' : selectedSubjectNames.length ? 'No more eligible courses available' : statusMessage}
           options={remainingCourses.map((c) => ({ label: c, value: c }))}
         />
         <button
           type="button"
           className={addToListButtonClass}
-          disabled={!selectedCourse || locked}
+          disabled={!canBuildPreferences || !selectedCourse || locked}
           onClick={onAdd}
         >
           Add To List
@@ -51,7 +51,7 @@ export function CourseOrderingSection({
             <p className="mx-auto mt-2 max-w-md text-sm text-[#98a2b3]">
               {canBuildPreferences
                 ? 'Add your CUET subjects and marks to see personalised course recommendations based on last year cut-offs.'
-                : 'Complete profile and add at least one subject to unlock course suggestions.'}
+                : 'Complete Student Details and select at least one subject to unlock course suggestions.'}
             </p>
           </li>
         )}
