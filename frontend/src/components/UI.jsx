@@ -111,19 +111,10 @@ function CollegeNameWithWomenMarker({ college }) {
   )
 }
 
-export function CollegeCell({ college, campus, getCampusLabel }) {
-  const campusLabel = getCampusLabel(college, campus)
-  if (!campusLabel) {
-    return (
-      <span className="break-words">
-        <CollegeNameWithWomenMarker college={college} />
-      </span>
-    )
-  }
-  const tone = campusLabel === 'North Campus' ? 'text-[#0c2754]' : 'text-emerald-700'
+export function CollegeCell({ college }) {
   return (
     <span className="break-words">
-      <CollegeNameWithWomenMarker college={college} /> <span className={`font-semibold ${tone}`}>({campusLabel})</span>
+      <CollegeNameWithWomenMarker college={college} />
     </span>
   )
 }

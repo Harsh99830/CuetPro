@@ -2,7 +2,7 @@ import { useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { ChanceBadge, CollegeCell } from './UI'
-import { chanceBadgeClass, getCampusLabel, formatCollegeDisplay, sanitizeFileName } from '../utils/helpers'
+import { chanceBadgeClass, formatCollegeDisplay, sanitizeFileName } from '../utils/helpers'
 import { addToListButtonClass } from '../utils/styles'
 import { supabase } from '../utils/supabase'
 
@@ -237,7 +237,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                     >
                       <td className="px-4 py-3 text-[#667085]">{globalIndex + 1}</td>
                       <td className="px-4 py-3">
-                        <CollegeCell college={row.college} campus={row.campus} getCampusLabel={getCampusLabel} />
+                        <CollegeCell college={row.college} />
                       </td>
                       <td className="px-4 py-3">{row.course}</td>
                       <td className="px-4 py-3">{row.requiredCutoff.toFixed(2)}</td>
