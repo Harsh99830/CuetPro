@@ -71,32 +71,61 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
       }
     }
 
-    // small delay so loading spinner is visible
     await new Promise((resolve) => setTimeout(resolve, 600))
-    triggerPdfDownload()
+    await triggerPdfDownload()
     setIsDownloading(false)
   }
 
-  function addWatermarkToAllPages(doc) {
+  function addWatermarkToAllPages(doc, watermark) {
+    if (!watermark) return
     const totalPdfPages = doc.internal.getNumberOfPages()
     const pageWidth = doc.internal.pageSize.getWidth()
     const pageHeight = doc.internal.pageSize.getHeight()
     for (let i = 1; i <= totalPdfPages; i++) {
       doc.setPage(i)
-      doc.saveGraphicsState()
-      doc.setGState(new doc.GState({ opacity: 0.08 }))
-      doc.setFontSize(100)
-      doc.setFont('helvetica', 'bold')
-      doc.setTextColor(12, 39, 84)
-      doc.text('CuetPro', pageWidth / 2, (pageHeight / 2) + 20, {
-        angle: 45,
-        align: 'center',
-      })
-      doc.restoreGraphicsState()
+      // Place the pre-rotated canvas image perfectly centred on the page
+      doc.addImage(
+        watermark.dataUrl, 'PNG',
+        pageWidth / 2 - watermark.width / 2,
+        pageHeight / 2 - watermark.height / 2,
+        watermark.width,
+        watermark.height
+      )
     }
   }
 
-  function triggerPdfDownload() {
+  async function triggerPdfDownload() {
+    // Pre-render the rotated logo onto a canvas so it centres perfectly on every page
+    let watermark = null
+    try {
+      watermark = await new Promise((resolve) => {
+        const img = new Image()
+        img.onload = () => {
+          const angle = 45 * Math.PI / 180
+          const cos = Math.cos(angle)
+          const sin = Math.sin(angle)
+          const scale = 2 // 2× for print sharpness
+          const imgW = 380 * scale
+          const imgH = Math.round(imgW * img.naturalHeight / img.naturalWidth)
+          // Canvas must be big enough to contain the rotated image
+          const canvasW = Math.ceil(imgW * cos + imgH * sin)
+          const canvasH = Math.ceil(imgW * sin + imgH * cos)
+          const canvas = document.createElement('canvas')
+          canvas.width = canvasW
+          canvas.height = canvasH
+          const ctx = canvas.getContext('2d')
+          ctx.globalAlpha = 0.1
+          ctx.translate(canvasW / 2, canvasH / 2)
+          ctx.rotate(angle)
+          ctx.drawImage(img, -imgW / 2, -imgH / 2, imgW, imgH)
+          resolve({ dataUrl: canvas.toDataURL('image/png'), width: canvasW / scale, height: canvasH / scale })
+        }
+        img.onerror = () => resolve(null)
+        img.src = '/cuet-pro-logo.png'
+      })
+    } catch (e) {
+      console.error('Failed to create watermark:', e)
+    }
     const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
     doc.setFontSize(13)
     doc.text('DU Preference Sheet', 40, 32)
@@ -115,7 +144,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
       styles: { fontSize: 8 },
       headStyles: { fillColor: [12, 39, 84] },
     })
-    addWatermarkToAllPages(doc)
+    addWatermarkToAllPages(doc, watermark)
     doc.save(`${sanitizeFileName(studentName || 'student')}_du_preference_sheet.pdf`)
   }
 
