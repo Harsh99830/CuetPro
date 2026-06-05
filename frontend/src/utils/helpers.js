@@ -87,9 +87,10 @@ export function evaluateCombinationRule(segmentText, subjects) {
 
 export function isProgramAllowedForGender(collegeGender, studentGender) {
   const g = String(collegeGender || '').toLowerCase()
+  const s = String(studentGender || '').toLowerCase()
   if (g.includes('co-ed')) return true
-  if (g.includes('girls')) return studentGender === 'Female'
-  if (g.includes('boys')) return studentGender === 'Male'
+  if (g.includes('female') || g.includes('girls')) return s === 'female'
+  if (g.includes('male') || g.includes('boys')) return s === 'male'
   return true
 }
 
@@ -151,6 +152,7 @@ export function classifyChance(studentScore, requiredCutoff) {
 }
 
 export function chanceBadgeClass(chance) {
+  if (chance === null || chance === undefined) return 'na'
   if (chance >= 75) return 'safe'
   if (chance >= 45) return 'match'
   return 'dream'
@@ -162,7 +164,8 @@ export function sanitizeFileName(name) {
 
 export function getCampusLabel(college, campus) {
   const normalized = String(campus || '').trim().toLowerCase()
-  if (normalized === 'north campus' && northCampusColleges.has(String(college || '').trim())) return 'North Campus'
+  const cleanCollege = String(college || '').replace(/\s*\(W\)\s*/gi, '').trim()
+  if (normalized === 'north campus' && northCampusColleges.has(cleanCollege)) return 'North Campus'
   if (normalized === 'south campus') return 'South Campus'
   return ''
 }
@@ -207,6 +210,10 @@ export function prioritizeCourseFirstRows(rows, courseOrder) {
   return grouped
 }
 
+export function getMaxMarksForSubject() {
+  return 250
+}
+
 export function readSubjectEntries(subjects) {
   const entries = []
   const seen = new Set()
@@ -227,7 +234,10 @@ export function readSubjectEntries(subjects) {
     if (seen.has(subject)) throw new Error(`Subject ${subject} has been selected more than once.`)
     seen.add(subject)
     const numericMarks = Number(marks)
-    if (!Number.isFinite(numericMarks) || numericMarks < 0 || numericMarks > 250) throw new Error(`Marks for Subject ${i + 1} must be between 0 and 250.`)
+    const maxAllowed = getMaxMarksForSubject(subject)
+    if (!Number.isFinite(numericMarks) || numericMarks < 0 || numericMarks > maxAllowed) {
+      throw new Error(`Marks for Subject ${i + 1} must be between 0 and ${maxAllowed}.`)
+    }
     entries.push({ subject, marks: numericMarks })
   }
   if (!entries.length) throw new Error('Please select at least one subject with marks.')
@@ -235,8 +245,15 @@ export function readSubjectEntries(subjects) {
 }
 
 export function computeStudentScore(subjectEntries) {
-  const sorted = subjectEntries.map((e) => e.marks).sort((a, b) => b - a)
-  return Math.round(sorted.slice(0, 5).reduce((sum, v) => sum + v, 0))
+  // Sum all subjects (max 1250 for 5 subjects × 250), then scale to 1000
+  const totalRaw = subjectEntries.reduce((sum, e) => sum + e.marks, 0)
+  const maxPossible = subjectEntries.length * 250
+  return Math.round((totalRaw / maxPossible) * 1000)
+}
+
+export function computeStudentScoreMax(subjectEntries) {
+  // Max possible is always 1000 after scaling
+  return 1000
 }
 
 export function loadScript(src) {

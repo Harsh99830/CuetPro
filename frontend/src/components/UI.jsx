@@ -74,6 +74,14 @@ export function MetricCard({ label, value, icon }) {
 }
 
 export function ChanceBadge({ chance, tone }) {
+  if (chance === null || chance === undefined) {
+    return (
+      <span className="inline-flex min-w-[64px] items-center justify-center rounded-full bg-slate-100 px-2 py-1 text-[11px] font-bold uppercase tracking-[0.14em] text-slate-600">
+        NA
+      </span>
+    )
+  }
+
   const classes = {
     safe: 'bg-emerald-100 text-emerald-700',
     match: 'bg-amber-100 text-amber-700',
@@ -91,13 +99,31 @@ export function ChanceBadge({ chance, tone }) {
   )
 }
 
+function CollegeNameWithWomenMarker({ college }) {
+  const markerIndex = String(college || '').lastIndexOf('(W)')
+  if (markerIndex === -1) return college
+  return (
+    <>
+      {college.slice(0, markerIndex)}
+      <span className="font-semibold text-red-600" style={{ color: '#dc2626' }}>(W)</span>
+      {college.slice(markerIndex + 3)}
+    </>
+  )
+}
+
 export function CollegeCell({ college, campus, getCampusLabel }) {
   const campusLabel = getCampusLabel(college, campus)
-  if (!campusLabel) return <span className="break-words">{college}</span>
+  if (!campusLabel) {
+    return (
+      <span className="break-words">
+        <CollegeNameWithWomenMarker college={college} />
+      </span>
+    )
+  }
   const tone = campusLabel === 'North Campus' ? 'text-[#0c2754]' : 'text-emerald-700'
   return (
     <span className="break-words">
-      {college} <span className={`font-semibold ${tone}`}>({campusLabel})</span>
+      <CollegeNameWithWomenMarker college={college} /> <span className={`font-semibold ${tone}`}>({campusLabel})</span>
     </span>
   )
 }

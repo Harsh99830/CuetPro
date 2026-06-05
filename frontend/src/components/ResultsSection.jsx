@@ -109,7 +109,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
         formatCollegeDisplay(row.college, row.campus),
         row.course,
         row.requiredCutoff.toFixed(2),
-        chanceBadgeClass(row.chance) === 'safe' ? 'High' : chanceBadgeClass(row.chance) === 'match' ? 'Moderate' : 'Low',
+        row.chance === null ? 'NA' : chanceBadgeClass(row.chance) === 'safe' ? 'High' : chanceBadgeClass(row.chance) === 'match' ? 'Moderate' : 'Low',
       ]),
       startY: 64,
       styles: { fontSize: 8 },
@@ -250,7 +250,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
               ) : (
                 <tr>
                   <td className="px-4 py-6 text-center text-[#98a2b3]" colSpan="5">
-                    No matching records found for selected stream, courses, category, and gender.
+                    No matching records found for selected stream, courses, and category.
                   </td>
                 </tr>
               )}
