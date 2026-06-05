@@ -2,7 +2,7 @@ import { useState } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { ChanceBadge, CollegeCell } from './UI'
-import { chanceBadgeClass, formatCollegeDisplay, sanitizeFileName } from '../utils/helpers'
+import { chanceBadgeClass, sanitizeFileName } from '../utils/helpers'
 import { addToListButtonClass } from '../utils/styles'
 import { supabase } from '../utils/supabase'
 
@@ -135,7 +135,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
       head: [['Preference No.', 'College', 'Course', 'Previous Cutoff', 'Admission Chances']],
       body: resultRows.map((row, idx) => [
         idx + 1,
-        formatCollegeDisplay(row.college, row.campus),
+        row.college,
         row.course,
         row.requiredCutoff.toFixed(2),
         row.chance === null ? 'NA' : chanceBadgeClass(row.chance) === 'safe' ? 'High' : chanceBadgeClass(row.chance) === 'match' ? 'Moderate' : 'Low',

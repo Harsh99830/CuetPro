@@ -162,6 +162,13 @@ export function sanitizeFileName(name) {
   return String(name || 'student').replace(/[^a-z0-9-_]+/gi, '_').replace(/^_+|_+$/g, '') || 'student'
 }
 
+// Remove parenthetical suffixes like (Evening), (Day), (Morning) but keep (W)
+export function cleanCollegeName(name) {
+  return String(name || '')
+    .replace(/\s*\((?!W\))[^)]*\)/g, '')
+    .trim()
+}
+
 export function getCampusLabel(college, campus) {
   const normalized = String(campus || '').trim().toLowerCase()
   const cleanCollege = String(college || '').replace(/\s*\(W\)\s*/gi, '').trim()

@@ -8,7 +8,7 @@ import {
   normalizeCourseName, formatProgram, inferStream, evaluateCombinationRule,
   isProgramAllowedForGender, extractCutoffForCategory, scoreCoursePreferenceOrder,
   classifyChance, matchesCampusPreference, prioritizeGeneratedRows, prioritizeCourseFirstRows,
-  readSubjectEntries, computeStudentScore, formatCollegeDisplay, sanitizeFileName, loadScript,
+  readSubjectEntries, computeStudentScore, formatCollegeDisplay, sanitizeFileName, loadScript, cleanCollegeName,
 } from './utils/helpers'
 import { footerPrimaryButtonClass, footerSecondaryButtonClass, inputClass } from './utils/styles'
 
@@ -229,7 +229,7 @@ function App() {
         const collegeRank = Number(item.rank) || 100
         const collegeQuality = 1 - (Math.min(Math.max(collegeRank, 1), 100) - 1) / 99
         const smartScore = collegeQuality * 0.45 + normalizedPref * 0.25 + Math.max(0, 1 - diffAbs / 180) * 0.2 + Math.min(requiredCutoff / 1000, 1) * 0.1
-        return { college: item.college, campus: item.campus, course, requiredCutoff, studentScore, chance, smartScore, collegeRank }
+        return { college: cleanCollegeName(item.college), campus: item.campus, course, requiredCutoff, studentScore, chance, smartScore, collegeRank }
       })
       .filter(Boolean)
       .sort((a, b) => b.smartScore - a.smartScore || a.collegeRank - b.collegeRank || b.requiredCutoff - a.requiredCutoff || a.college.localeCompare(b.college))
