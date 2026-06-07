@@ -33,8 +33,7 @@ function App() {
   const [lastMobileNumber, setLastMobileNumber] = useState('')
   const [exportReady, setExportReady] = useState(false)
   const [generatedScore, setGeneratedScore] = useState('--')
-  const [tableUpdated, setTableUpdated] = useState(false)
-  const tableUpdatedTimerRef = useRef(null)
+  const [isDirty, setIsDirty] = useState(false)
   const mobileRef = useRef('')
   const resultsSectionRef = useRef(null)
 
@@ -130,13 +129,6 @@ function App() {
   useEffect(() => { mobileRef.current = lastMobileNumber }, [lastMobileNumber])
 
   useEffect(() => {
-    if (resultRows.length > 0 && profileReady && !hasMarksErrors && hasAtLeastOneSubject) {
-      handleGenerate(null, true)
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.gender, form.category, form.displayMode, subjects, preferences])
-
-  useEffect(() => {
     async function init() {
       try {
         await Promise.allSettled([
@@ -158,17 +150,17 @@ function App() {
 
   function updateFormField(field, value) {
     setForm((c) => ({ ...c, [field]: value }))
-    if (field === 'stream') { setPreferences([]); setResultRows([]); setSummary(''); setExportReady(false); setLocked(false) }
+    if (field === 'stream') { setPreferences([]); setResultRows([]); setSummary(''); setExportReady(false); setLocked(false); setIsDirty(false) }
+    else { setIsDirty((d) => resultRows.length > 0 ? true : d) }
   }
 
   function updateSubject(index, field, value) {
     setSubjects((current) => {
       const next = current.map((item, i) => (i === index ? { ...item, [field]: value } : item))
-      // Preference filtering now happens reactively via the availableCourses effect,
-      // so we don't need to do it here (avoids stale-closure bugs).
       return next
     })
     setLocked(false)
+    setIsDirty((d) => resultRows.length > 0 ? true : d)
   }
 
   function requestMobileNumber() {
@@ -208,14 +200,14 @@ function App() {
     doc.save(`${sanitizeFileName(lastStudentName)}_du_preference_sheet.pdf`)
   }
 
-  function handleGenerate(event, isAutomatic = false) {
+  function handleGenerate(event) {
     if (event) event.preventDefault()
     let subjectEntries
     try { subjectEntries = readSubjectEntries(subjects) }
-    catch (err) { if (!isAutomatic) window.alert(err.message); return }
+    catch (err) { window.alert(err.message); return }
 
-    if (!form.stream) { if (!isAutomatic) window.alert('Please select a stream first.'); return }
-    if (!duData.length || !courseRequirements.length) { if (!isAutomatic) window.alert('Final generation needs the DU cutoff and course requirement datasets.'); return }
+    if (!form.stream) { window.alert('Please select a stream first.'); return }
+    if (!duData.length || !courseRequirements.length) { window.alert('Final generation needs the DU cutoff and course requirement datasets.'); return }
 
     const studentScore = computeStudentScore(subjectEntries)
     const selectedCourses = preferences.length ? preferences : streamCourses[form.stream] || []
@@ -252,25 +244,19 @@ function App() {
       ? prioritizeCourseFirstRows(possible, selectedCourses)
       : prioritizeGeneratedRows(possible)
 
-    if (!isAutomatic) setGeneratedScore(`${studentScore}/1000`)
-    if (isAutomatic) {
-      setTableUpdated(true)
-      clearTimeout(tableUpdatedTimerRef.current)
-      tableUpdatedTimerRef.current = setTimeout(() => setTableUpdated(false), 3000)
-    }
+    setGeneratedScore(`${studentScore}/1000`)
     setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Estimated CUET Score: ${studentScore}/1000`)
     setLastStudentName(form.name || 'student')
     setExportReady(orderedPossible.length > 0)
     setResultRows(orderedPossible)
-    if (!isAutomatic) {
-      setTimeout(() => resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
-    }
+    setIsDirty(false)
+    setTimeout(() => resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
   }
 
   function handleReset() {
     setForm(initialForm); setSubjects(initialSubjects); setPreferences([])
     setSelectedCourse(''); setResultRows([]); setSummary('')
-    setLastStudentName('student'); setLastMobileNumber(''); setExportReady(false); setLocked(false); setGeneratedScore('--'); setTableUpdated(false)
+    setLastStudentName('student'); setLastMobileNumber(''); setExportReady(false); setLocked(false); setGeneratedScore('--'); setIsDirty(false)
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -315,10 +301,10 @@ function App() {
               statusMessage={statusMessage}
               selectedSubjectNames={selectedSubjectNames}
               preferences={preferences}
-              onAdd={() => { if (selectedCourse) setPreferences((c) => [...c, selectedCourse]) }}
-              onMoveUp={(i) => setPreferences((c) => { const n = [...c]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return n })}
-              onMoveDown={(i) => setPreferences((c) => { const n = [...c]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n })}
-              onRemove={(i) => setPreferences((c) => c.filter((_, idx) => idx !== i))}
+              onAdd={() => { if (selectedCourse) { setPreferences((c) => [...c, selectedCourse]); setIsDirty(resultRows.length > 0) } }}
+              onMoveUp={(i) => { setPreferences((c) => { const n = [...c]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return n }); setIsDirty(resultRows.length > 0) }}
+              onMoveDown={(i) => { setPreferences((c) => { const n = [...c]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n }); setIsDirty(resultRows.length > 0) }}
+              onRemove={(i) => { setPreferences((c) => c.filter((_, idx) => idx !== i)); setIsDirty(resultRows.length > 0) }}
               canBuildPreferences={canBuildPreferences}
             />
 
@@ -345,7 +331,8 @@ function App() {
             summary={summary}
             exportReady={exportReady}
             studentName={lastStudentName}
-            tableUpdated={tableUpdated}
+            isDirty={isDirty}
+            onRegenerateClick={() => resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }) && window.scrollTo({ top: 0, behavior: 'smooth' })}
           />
         </div>
 
