@@ -33,6 +33,8 @@ function App() {
   const [lastMobileNumber, setLastMobileNumber] = useState('')
   const [exportReady, setExportReady] = useState(false)
   const [generatedScore, setGeneratedScore] = useState('--')
+  const [tableUpdated, setTableUpdated] = useState(false)
+  const tableUpdatedTimerRef = useRef(null)
   const mobileRef = useRef('')
   const resultsSectionRef = useRef(null)
 
@@ -251,6 +253,11 @@ function App() {
       : prioritizeGeneratedRows(possible)
 
     if (!isAutomatic) setGeneratedScore(`${studentScore}/1000`)
+    if (isAutomatic) {
+      setTableUpdated(true)
+      clearTimeout(tableUpdatedTimerRef.current)
+      tableUpdatedTimerRef.current = setTimeout(() => setTableUpdated(false), 3000)
+    }
     setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Estimated CUET Score: ${studentScore}/1000`)
     setLastStudentName(form.name || 'student')
     setExportReady(orderedPossible.length > 0)
@@ -263,7 +270,7 @@ function App() {
   function handleReset() {
     setForm(initialForm); setSubjects(initialSubjects); setPreferences([])
     setSelectedCourse(''); setResultRows([]); setSummary('')
-    setLastStudentName('student'); setLastMobileNumber(''); setExportReady(false); setLocked(false); setGeneratedScore('--')
+    setLastStudentName('student'); setLastMobileNumber(''); setExportReady(false); setLocked(false); setGeneratedScore('--'); setTableUpdated(false)
   }
 
   // ── Render ───────────────────────────────────────────────────────────────────
@@ -338,6 +345,7 @@ function App() {
             summary={summary}
             exportReady={exportReady}
             studentName={lastStudentName}
+            tableUpdated={tableUpdated}
           />
         </div>
 
