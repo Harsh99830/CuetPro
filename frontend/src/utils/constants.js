@@ -20,15 +20,9 @@ export const categoryToCutoffKey = {
   GEN: 'UR', OBC: 'OBC', EWS: 'EWS', SC: 'SC', ST: 'ST', PWD: 'PwBD',
 }
 
-export const northCampusColleges = new Set([
-  "St. Stephen's College", 'Shri Ram College of Commerce', 'Hindu College',
-  'Hansraj College', 'Miranda House', 'Kirori Mal College', 'Ramjas College',
-  'Daulat Ram College', 'Sri Guru Tegh Bahadur Khalsa College',
-])
-
 export const initialForm = {
   name: '', gender: '', category: '', stream: '',
-  displayMode: 'college-first', campusPreference: 'both',
+  displayMode: 'college-first',
 }
 
 export const initialSubjects = Array.from({ length: 5 }, (_, index) => ({

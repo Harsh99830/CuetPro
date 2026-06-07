@@ -1,4 +1,4 @@
-import { languages, domainSubjects, generalTests, northCampusColleges } from './constants'
+import { languages, domainSubjects, generalTests } from './constants'
 
 export function normalizeTextForMatch(value) {
   return String(value || '').toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -170,38 +170,20 @@ export function cleanCollegeName(name) {
 }
 
 export function getCampusLabel(college, campus) {
-  const normalized = String(campus || '').trim().toLowerCase()
-  const cleanCollege = String(college || '').replace(/\s*\(W\)\s*/gi, '').trim()
-  if (normalized === 'north campus' && northCampusColleges.has(cleanCollege)) return 'North Campus'
-  if (normalized === 'south campus') return 'South Campus'
   return ''
 }
 
 export function formatCollegeDisplay(college, campus) {
-  const campusLabel = getCampusLabel(college, campus)
-  return campusLabel ? `${college} (${campusLabel})` : college
+  return String(college || '')
 }
 
-export function matchesCampusPreference(college, campus, preference) {
-  const p = String(preference || 'both').trim().toLowerCase()
-  if (p === 'both') return true
-  const label = getCampusLabel(college, campus).toLowerCase()
-  if (p === 'north') return label === 'north campus'
-  if (p === 'south') return label === 'south campus'
-  return true
-}
-
-export function campusPriority(college, campus) {
-  const label = getCampusLabel(college, campus)
-  if (label === 'North Campus') return 0
-  if (label === 'South Campus') return 1
-  return 2
+export function campusPriority() {
+  return 0
 }
 
 export function prioritizeGeneratedRows(rows) {
   return [...rows].sort((a, b) => {
     if (a.collegeRank !== b.collegeRank) return a.collegeRank - b.collegeRank
-    if (campusPriority(a.college, a.campus) !== campusPriority(b.college, b.campus)) return campusPriority(a.college, a.campus) - campusPriority(b.college, b.campus)
     if (b.smartScore !== a.smartScore) return b.smartScore - a.smartScore
     if (b.requiredCutoff !== a.requiredCutoff) return b.requiredCutoff - a.requiredCutoff
     return a.college.localeCompare(b.college)

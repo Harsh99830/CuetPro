@@ -6,9 +6,9 @@ import courseRequirementsData from '../Data/course_requirements.json'
 import { categoryToCutoffKey, initialForm, initialSubjects } from './utils/constants'
 import {
   normalizeCourseName, formatProgram, inferStream, evaluateCombinationRule,
-  isProgramAllowedForGender, extractCutoffForCategory, scoreCoursePreferenceOrder,
-  classifyChance, matchesCampusPreference, prioritizeGeneratedRows, prioritizeCourseFirstRows,
-  readSubjectEntries, computeStudentScore, formatCollegeDisplay, sanitizeFileName, loadScript, cleanCollegeName,
+  extractCutoffForCategory, scoreCoursePreferenceOrder,
+  classifyChance, prioritizeGeneratedRows, prioritizeCourseFirstRows,
+  readSubjectEntries, computeStudentScore, sanitizeFileName, loadScript, cleanCollegeName,
 } from './utils/helpers'
 import { footerPrimaryButtonClass, footerSecondaryButtonClass, inputClass } from './utils/styles'
 
@@ -132,7 +132,7 @@ function App() {
       handleGenerate(null, true)
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form.gender, form.category, form.campusPreference, form.displayMode, subjects, preferences])
+  }, [form.gender, form.category, form.displayMode, subjects, preferences])
 
   useEffect(() => {
     async function init() {
@@ -182,7 +182,7 @@ function App() {
     if (!resultRows.length || !window.XLSX || !requestMobileNumber()) return
     const sheetRows = resultRows.map((row, idx) => ({
       'Preference No.': idx + 1,
-      College: formatCollegeDisplay(row.college, row.campus),
+      College: row.college,
       Course: row.course,
       'Required Cutoff': Number(row.requiredCutoff.toFixed(2)),
       Chance: row.chance === null ? 'NA' : `${row.chance}%`,
@@ -200,7 +200,7 @@ function App() {
     doc.setFontSize(10); doc.text(summary, 40, 50)
     doc.autoTable({
       head: [['Preference No.', 'College', 'Course', 'Required Cutoff', 'Chance']],
-      body: resultRows.map((row, idx) => [idx + 1, formatCollegeDisplay(row.college, row.campus), row.course, row.requiredCutoff.toFixed(2), row.chance === null ? 'NA' : `${row.chance}%`]),
+      body: resultRows.map((row, idx) => [idx + 1, row.college, row.course, row.requiredCutoff.toFixed(2), row.chance === null ? 'NA' : `${row.chance}%`]),
       startY: 64, styles: { fontSize: 8 },
     })
     doc.save(`${sanitizeFileName(lastStudentName)}_du_preference_sheet.pdf`)
@@ -222,21 +222,26 @@ function App() {
     const possible = duData
       .filter((item) => selectedCourses.includes(formatProgram(item.program)))
       .filter((item) => isCourseEligible(formatProgram(item.program), subjectEntries.map((e) => e.subject)))
-      .filter((item) => matchesCampusPreference(item.college, item.campus, form.campusPreference))
+      .filter((item) => {
+        const g = String(item.gender || '').toLowerCase()
+        const isMale = String(form.gender || '').toLowerCase() === 'male'
+        const isFemale = String(form.gender || '').toLowerCase() === 'female'
+        if (isMale) return g.includes('co-ed') || g === ''
+        if (isFemale) return g.includes('co-ed') || g.includes('female') || g.includes('girls') || g === ''
+        return true
+      })
       .map((item) => {
         const requiredCutoff = extractCutoffForCategory(item.cutoffs, categoryKey)
         if (requiredCutoff === null) return null
         const course = formatProgram(item.program)
-        const isWomenOnlyCollege = String(item.college || '').includes('(W)') || String(item.gender || '').toLowerCase().includes('female') || String(item.gender || '').toLowerCase().includes('girls')
-        const isAllowedForGender = isProgramAllowedForGender(item.gender, form.gender) && (!isWomenOnlyCollege || String(form.gender || '').toLowerCase() === 'female')
-        const chance = isAllowedForGender ? classifyChance(studentScore, requiredCutoff) : null
+        const chance = classifyChance(studentScore, requiredCutoff)
         const diffAbs = Math.abs(studentScore - requiredCutoff)
         const prefIndex = preferences.length ? preferences.indexOf(course) : -1
         const normalizedPref = prefIndex === -1 ? 0.4 : 1 - prefIndex / Math.max(1, preferences.length)
         const collegeRank = Number(item.rank) || 100
         const collegeQuality = 1 - (Math.min(Math.max(collegeRank, 1), 100) - 1) / 99
         const smartScore = collegeQuality * 0.45 + normalizedPref * 0.25 + Math.max(0, 1 - diffAbs / 180) * 0.2 + Math.min(requiredCutoff / 1000, 1) * 0.1
-        return { college: cleanCollegeName(item.college), campus: item.campus, course, requiredCutoff, studentScore, chance, smartScore, collegeRank }
+        return { college: cleanCollegeName(item.college), course, requiredCutoff, studentScore, chance, smartScore, collegeRank }
       })
       .filter(Boolean)
       .sort((a, b) => b.smartScore - a.smartScore || a.collegeRank - b.collegeRank || b.requiredCutoff - a.requiredCutoff || a.college.localeCompare(b.college))
@@ -245,12 +250,10 @@ function App() {
       ? prioritizeCourseFirstRows(possible, selectedCourses)
       : prioritizeGeneratedRows(possible)
 
-    const campusLabel = form.campusPreference === 'both' ? 'Both' : `${form.campusPreference.charAt(0).toUpperCase()}${form.campusPreference.slice(1)}`
     if (!isAutomatic) setGeneratedScore(`${studentScore}/1000`)
-    setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Campus: ${campusLabel} | Estimated CUET Score: ${studentScore}/1000`)
+    setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Estimated CUET Score: ${studentScore}/1000`)
     setLastStudentName(form.name || 'student')
     setExportReady(orderedPossible.length > 0)
-    setLocked(orderedPossible.length > 0)
     setResultRows(orderedPossible)
     if (!isAutomatic) {
       setTimeout(() => resultsSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100)
@@ -291,7 +294,7 @@ function App() {
                 <SelectField label="Category" value={form.category} onChange={(e) => updateFormField('category', e.target.value)} required options={['GEN', 'OBC', 'EWS', 'SC', 'ST', 'PWD']} />
                 <SelectField label="Stream" value={form.stream} onChange={(e) => updateFormField('stream', e.target.value)} required options={['Humanities', 'Commerce', 'Science']} />
                 <SelectField label="Show Results As" value={form.displayMode} onChange={(e) => updateFormField('displayMode', e.target.value)} options={[{ label: 'College First', value: 'college-first' }, { label: 'Course First', value: 'course-first' }]} />
-                <SelectField label="Campus Preference" value={form.campusPreference} onChange={(e) => updateFormField('campusPreference', e.target.value)} options={[{ label: 'Both', value: 'both' }, { label: 'North', value: 'north' }, { label: 'South', value: 'south' }]} />
+
               </div>
             </PanelSection>
 
