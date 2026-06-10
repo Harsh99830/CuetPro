@@ -34,7 +34,7 @@ export function CustomDropdown({
   function handleSelect(nextValue) { onChange({ target: { value: nextValue } }); setOpen(false) }
 
   return (
-    <div ref={wrapperRef} className={`relative ${open ? 'z-[90]' : 'z-10'}`}>
+    <div ref={wrapperRef} className={`relative w-full min-w-0 ${open ? 'z-[90]' : 'z-10'}`}>
       <input id={id} tabIndex={-1} className="sr-only" value={value} onChange={() => {}} required={required} />
       <button
         type="button"
@@ -44,7 +44,7 @@ export function CustomDropdown({
         aria-haspopup="listbox"
         aria-expanded={open}
       >
-        <span className={`truncate text-left ${selectedOption ? 'text-[#101828]' : 'text-[#98a2b3]'}`}>
+        <span className={`flex-1 min-w-0 truncate text-left ${selectedOption ? 'text-[#101828]' : 'text-[#98a2b3]'}`}>
           {selectedOption?.label || placeholder}
         </span>
         <span className={`shrink-0 text-[#98a2b3] transition-transform ${open ? 'rotate-180' : ''}`}>
@@ -102,8 +102,8 @@ function DropdownOption({ children, selected, onClick }) {
       onClick={onClick}
       className={`flex w-full items-center justify-between rounded-2xl px-3 py-2.5 text-left text-sm transition ${selected ? 'bg-[#eff6ff] font-medium text-[#2563eb]' : 'text-[#101828] hover:bg-[#f8fafc]'}`}
     >
-      <span className="truncate">{children}</span>
-      {selected ? <span className="ml-3 text-xs font-semibold uppercase tracking-[0.12em]">Selected</span> : null}
+      <span className="flex-1 min-w-0 truncate">{children}</span>
+      {selected ? <span className="ml-3 shrink-0 text-xs font-semibold uppercase tracking-[0.12em]">Selected</span> : null}
     </button>
   )
 }
