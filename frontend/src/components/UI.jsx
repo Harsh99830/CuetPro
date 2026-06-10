@@ -69,11 +69,13 @@ export function AppShell({ activeSection, onNavClick, children }) {
       >
         {/* Logo */}
         <div className="flex shrink-0 items-center justify-center border-b border-[#e4e7ec] px-5 py-4">
-          <img
-            src="/cuet-pro-logo.png"
-            alt="CUET PRO — An initiative by DU Toppers"
-            className="h-12 w-auto object-contain"
-          />
+          <a href="https://cuetpro.com" target="_blank" rel="noopener noreferrer">
+            <img
+              src="/cuet-pro-logo.png"
+              alt="CUET PRO — An initiative by DU Toppers"
+              className="h-12 w-auto object-contain transition hover:opacity-80"
+            />
+          </a>
         </div>
 
         {/* Nav — no overflow, items just stack */}
