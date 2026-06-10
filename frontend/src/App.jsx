@@ -11,9 +11,9 @@ import {
   readSubjectEntries, sanitizeFileName, loadScript, cleanCollegeName,
 } from './utils/helpers'
 import { footerPrimaryButtonClass, footerSecondaryButtonClass, inputClass } from './utils/styles'
-import { computeSmartScore } from './utils/scoreEngine'
+import { computeSmartScore, getScoreBreakdown } from './utils/scoreEngine'
 
-import { AppShell, MetricCard, PanelSection, Field, SiteFooter } from './components/UI'
+import { MetricCard, PanelSection, Field, SiteFooter, SiteHeader } from './components/UI'
 import { SelectField } from './components/CustomDropdown'
 import { SubjectsSection } from './components/SubjectsSection'
 import { CourseOrderingSection } from './components/CourseOrderingSection'
@@ -36,7 +36,6 @@ function App() {
   const [exportReady, setExportReady] = useState(false)
   const [generatedScore, setGeneratedScore] = useState('--')
   const [isDirty, setIsDirty] = useState(false)
-  const [activeSection, setActiveSection] = useState('profile')
   const mobileRef = useRef('')
 
   // ── Derived data ────────────────────────────────────────────────────────────
@@ -76,29 +75,26 @@ function App() {
     [streamCourses],
   )
 
-  const isCourseEligible = useMemo(() => (course, subjectNames) => {
-    if (!subjectNames.length) return false
-    if (!courseRequirementIndex.size) return true
-    const eligibility = courseRequirementIndex.get(normalizeCourseName(course))
-    if (!eligibility) return false
-    const segments = String(eligibility).replace(/\s+/g, ' ').trim()
-      .split(/\s+OR\s+/i)
-      .map((seg) => seg.replace(/Combination\s+[IVX0-9]+:?\s*/gi, '').trim())
-      .filter(Boolean)
-    if (!segments.length) return false
-    return segments.some((seg) => evaluateCombinationRule(seg, subjectNames))
-  }, [courseRequirementIndex])
+  const isCourseEligible = useMemo(() => (course) => {
+    const validSubjects = subjects
+      .filter((s) => s.subject)
+      .map((s) => ({ subject: s.subject, marks: Number(s.marks) || 0 }))
+      
+    if (!validSubjects.length) return false
+    if (!courseRequirements.length) return true
+
+    const breakdown = getScoreBreakdown(validSubjects, course, courseRequirements)
+    return breakdown.isEligible
+  }, [subjects, courseRequirements])
 
   const availableCourses = useMemo(() => {
-    // ── STREAM FILTER: only show courses from the student's selected stream ──
-    const streamFilteredCourses = form.stream ? (streamCourses[form.stream] || []) : allCourses
-    return streamFilteredCourses
-      .filter((course) => isCourseEligible(course, selectedSubjectNames))
+    return allCourses
+      .filter((course) => isCourseEligible(course))
       .sort((a, b) => {
         const diff = scoreCoursePreferenceOrder(b, selectedSubjectNames) - scoreCoursePreferenceOrder(a, selectedSubjectNames)
         return diff !== 0 ? diff : a.localeCompare(b)
       })
-  }, [allCourses, streamCourses, form.stream, selectedSubjectNames, isCourseEligible])
+  }, [allCourses, selectedSubjectNames, isCourseEligible])
 
   const remainingCourses = availableCourses.filter((c) => !preferences.includes(c))
 
@@ -186,7 +182,7 @@ function App() {
 
     const possible = duData
       .filter((item) => selectedCourses.includes(formatProgram(item.program)))
-      .filter((item) => isCourseEligible(formatProgram(item.program), subjectEntries.map((e) => e.subject)))
+      .filter((item) => isCourseEligible(formatProgram(item.program)))
       .filter((item) => {
         const g = String(item.gender || '').toLowerCase()
         const isMale = String(form.gender || '').toLowerCase() === 'male'
@@ -240,8 +236,14 @@ function App() {
         if (error) console.error('Supabase student_details insert error:', error)
       })
     }
-
-    setTimeout(() => setActiveSection('results'), 200)
+    
+    // Auto-scroll to results logic
+    setTimeout(() => {
+      const resultsSection = document.getElementById('results-section')
+      if (resultsSection) {
+        resultsSection.scrollIntoView({ behavior: 'smooth' })
+      }
+    }, 100)
   }
 
   function handleReset() {
@@ -249,71 +251,26 @@ function App() {
     setSelectedCourse(''); setResultRows([]); setSummary('')
     setLastStudentName('student'); setLastMobileNumber(''); setExportReady(false)
     setLocked(false); setGeneratedScore('--'); setIsDirty(false)
-    setActiveSection('profile')
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
-
-  // ── Section progress indicator ───────────────────────────────────────────────
-
-  const steps = [
-    { id: 'profile', label: 'Profile', done: profileReady },
-    { id: 'subjects', label: 'Subjects', done: hasAtLeastOneSubject && !hasMarksErrors },
-    { id: 'courses', label: 'Courses', done: preferences.length > 0 },
-    { id: 'results', label: 'Results', done: resultRows.length > 0 },
-  ]
 
   // ── Render ───────────────────────────────────────────────────────────────────
 
   return (
-    <AppShell activeSection={activeSection} onNavClick={setActiveSection}>
+    <div className="min-h-screen bg-[#f5f7fa] px-4 py-8 sm:px-6 lg:px-8 font-sans">
+      <div className="mx-auto max-w-[1100px] space-y-8">
+        <SiteHeader />
 
-      {/* ── Metric cards row ── */}
-      <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
-        <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="subjects" />
-        <MetricCard label="Preferences" value={String(preferences.length)} icon="preferences" />
-        <MetricCard label="Est. Score" value={generatedScore} icon="score" />
-        <MetricCard label="Results" value={String(resultRows.length)} icon="generated-rows" />
-      </section>
+        {/* ── Metric cards row ── */}
+        <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
+          <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="subjects" />
+          <MetricCard label="Preferences" value={String(preferences.length)} icon="preferences" />
+          <MetricCard label="Est. Score" value={generatedScore} icon="score" />
+          <MetricCard label="Results" value={String(resultRows.length)} icon="generated-rows" />
+        </section>
 
-      {/* ── Progress stepper ── */}
-      <div className="mb-6 rounded-[16px] border border-[#e4e7ec] bg-white px-3 py-3 sm:px-5 sm:py-4">
-        <div className="flex items-center justify-between">
-        {steps.map((step, i) => (
-          <div key={step.id} className="flex flex-1 items-center">
-            <button
-              type="button"
-              onClick={() => setActiveSection(step.id)}
-              className={`flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium transition sm:px-4 sm:py-2.5 ${
-                activeSection === step.id
-                  ? 'bg-[#0c2754] text-white'
-                  : step.done
-                  ? 'text-[#16a34a]'
-                  : 'text-[#98a2b3]'
-              }`}
-            >
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
-                activeSection === step.id
-                  ? 'bg-white/20 text-white'
-                  : step.done
-                  ? 'bg-[#dcfce7] text-[#16a34a]'
-                  : 'bg-[#f2f4f7] text-[#98a2b3]'
-              }`}>
-                {step.done && activeSection !== step.id ? '✓' : i + 1}
-              </span>
-              <span className={activeSection === step.id ? 'inline' : 'hidden sm:inline'}>
-                {step.label}
-              </span>
-            </button>
-            {i < steps.length - 1 && (
-              <div className="mx-1 h-px flex-1 bg-[#e4e7ec] sm:hidden" />
-            )}
-          </div>
-        ))}
-        </div>
-      </div>
-
-      {/* ── Section: Student Profile ── */}
-      {activeSection === 'profile' && (
-        <div className="grid gap-5">
+        <div className="grid gap-8">
+          {/* ── Section: Student Profile ── */}
           <PanelSection title="Student Details" note="Personalises your course recommendations">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <label className="grid gap-2 text-sm font-medium uppercase tracking-[0.12em] text-[#667085]">
@@ -342,37 +299,10 @@ function App() {
             </div>
           </PanelSection>
 
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setActiveSection('subjects')}
-              disabled={!profileReady}
-              className="w-full rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
-            >
-              Next: Add Subjects →
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* ── Section: CUET Subjects ── */}
-      {activeSection === 'subjects' && (
-        <div className="grid gap-5">
+          {/* ── Section: CUET Subjects ── */}
           <SubjectsSection subjects={subjects} onUpdate={updateSubject} />
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
-            <button type="button" onClick={() => setActiveSection('profile')} className="w-full rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7] sm:w-auto">
-              ← Back
-            </button>
-            <button type="button" onClick={() => setActiveSection('courses')} disabled={!canBuildPreferences} className="w-full rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
-              Next: Select Courses →
-            </button>
-          </div>
-        </div>
-      )}
 
-      {/* ── Section: Course Ordering ── */}
-      {activeSection === 'courses' && (
-        <div className="grid gap-5">
+          {/* ── Section: Course Ordering ── */}
           <CourseOrderingSection
             remainingCourses={remainingCourses}
             selectedCourse={selectedCourse}
@@ -382,6 +312,7 @@ function App() {
             selectedSubjectNames={selectedSubjectNames}
             preferences={preferences}
             onAdd={() => { if (selectedCourse) { setPreferences((c) => [...c, selectedCourse]); setIsDirty(resultRows.length > 0) } }}
+            onAddManual={(courseName) => { if (courseName && !preferences.includes(courseName)) { setPreferences((c) => [...c, courseName]); setIsDirty(resultRows.length > 0) } }}
             onMoveUp={(i) => { setPreferences((c) => { const n = [...c]; [n[i - 1], n[i]] = [n[i], n[i - 1]]; return n }); setIsDirty(resultRows.length > 0) }}
             onMoveDown={(i) => { setPreferences((c) => { const n = [...c]; [n[i + 1], n[i]] = [n[i], n[i + 1]]; return n }); setIsDirty(resultRows.length > 0) }}
             onRemove={(i) => { setPreferences((c) => c.filter((_, idx) => idx !== i)); setIsDirty(resultRows.length > 0) }}
@@ -389,11 +320,11 @@ function App() {
           />
 
           {/* Generate CTA */}
-          <div className="rounded-[20px] bg-[#101828] px-6 py-6 text-white shadow-[0_12px_32px_rgba(16,24,40,0.16)]">
+          <div className="rounded-[16px] bg-[#101828] px-5 py-5 text-white shadow-[0_8px_24px_rgba(16,24,40,0.12)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-xl font-semibold sm:text-2xl">Ready to generate?</p>
-                <p className="mt-1 text-sm text-white/60 sm:text-base">Make sure all subject marks are entered correctly.</p>
+                <p className="text-lg font-semibold sm:text-xl">Ready to generate?</p>
+                <p className="mt-1 text-xs text-white/60 sm:text-sm">Make sure all subject marks are entered correctly.</p>
               </div>
               <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
                 <button type="button" onClick={handleGenerate} className={`${footerPrimaryButtonClass} w-full sm:w-auto`} disabled={!canGenerate}>
@@ -406,51 +337,38 @@ function App() {
             </div>
           </div>
 
-          <div className="flex justify-start">
-            <button type="button" onClick={() => setActiveSection('subjects')} className="w-full rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7] sm:w-auto">
-              ← Back
-            </button>
+          {/* ── Section: Results ── */}
+          <div id="results-section" className="grid gap-5">
+            {isDirty && (
+              <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-base font-medium text-amber-700">
+                <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 fill-current" aria-hidden="true">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-5a1 1 0 00-1 1v2a1 1 0 002 0V9a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+                You have unsaved changes. Click <strong className="mx-1">Generate Sheet</strong> to update results.
+              </div>
+            )}
+
+            {!resultRows.length && !summary ? (
+              <div className="rounded-[16px] border border-dashed border-[#dbe3f0] bg-white px-5 py-16 text-center">
+                <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f2f5fb] text-2xl text-[#c7d2e6]">≋</div>
+                <p className="text-base font-medium text-[#101828]">No results yet</p>
+                <p className="mt-1.5 text-sm text-[#98a2b3]">Complete all steps and click Generate Sheet to see your preference list.</p>
+              </div>
+            ) : (
+              <ResultsSection
+                resultRows={resultRows}
+                setResultRows={setResultRows}
+                summary={summary}
+                exportReady={exportReady}
+                studentName={lastStudentName}
+                isDirty={false}
+                onRegenerateClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              />
+            )}
           </div>
         </div>
-      )}
-
-      {/* ── Section: Results ── */}
-      {activeSection === 'results' && (
-        <div className="grid gap-5">
-          {isDirty && (
-            <div className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-base font-medium text-amber-700">
-              <svg viewBox="0 0 20 20" className="h-5 w-5 shrink-0 fill-current" aria-hidden="true">
-                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-5a1 1 0 00-1 1v2a1 1 0 002 0V9a1 1 0 00-1-1z" clipRule="evenodd" />
-              </svg>
-              You have unsaved changes. Go to <button type="button" onClick={() => setActiveSection('courses')} className="mx-1 font-bold underline">Courses</button> and click <strong className="mx-1">Generate Sheet</strong> to update results.
-            </div>
-          )}
-
-          {!resultRows.length && !summary ? (
-            <div className="rounded-[20px] border border-dashed border-[#dbe3f0] bg-white px-6 py-20 text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-[#f2f5fb] text-3xl text-[#c7d2e6]">≋</div>
-              <p className="text-lg font-medium text-[#101828]">No results yet</p>
-              <p className="mt-2 text-base text-[#98a2b3]">Complete all steps and click Generate Sheet to see your preference list.</p>
-              <button type="button" onClick={() => setActiveSection('profile')} className="mt-6 rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white transition hover:bg-[#0a2146]">
-                Start from Profile →
-              </button>
-            </div>
-          ) : (
-            <ResultsSection
-              resultRows={resultRows}
-              setResultRows={setResultRows}
-              summary={summary}
-              exportReady={exportReady}
-              studentName={lastStudentName}
-              isDirty={false}
-              onRegenerateClick={() => setActiveSection('courses')}
-            />
-          )}
-        </div>
-      )}
-
-      <SiteFooter />
-    </AppShell>
+      </div>
+    </div>
   )
 }
 

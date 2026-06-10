@@ -307,12 +307,12 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
               <span className="font-semibold text-[#101828]">{resultRows.length}</span> results
             </p>
 
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1">
               <button
                 type="button"
                 onClick={() => goTo(page - 1)}
                 disabled={page === 0}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4e7ec] bg-white text-[#667085] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e4e7ec] bg-white text-[#667085] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Previous page"
               >
                 <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current" aria-hidden="true">
@@ -325,7 +325,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                   key={p}
                   type="button"
                   onClick={() => goTo(p)}
-                  className={`flex h-9 min-w-[36px] items-center justify-center rounded-xl border px-2 text-sm font-semibold transition ${
+                  className={`hidden sm:flex h-9 min-w-[36px] shrink-0 items-center justify-center rounded-xl border px-2 text-sm font-semibold transition ${
                     p === page
                       ? 'border-[#0c2754] bg-[#0c2754] text-white'
                       : 'border-[#e4e7ec] bg-white text-[#667085] hover:bg-[#f8fafc]'
@@ -335,11 +335,16 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                 </button>
               ))}
 
+              {/* Show mobile current page indicator since buttons are hidden */}
+              <div className="flex h-9 items-center justify-center rounded-xl border border-[#0c2754] bg-[#0c2754] px-3 text-sm font-semibold text-white sm:hidden">
+                {page + 1} / {totalPages}
+              </div>
+
               <button
                 type="button"
                 onClick={() => goTo(page + 1)}
                 disabled={page === totalPages - 1}
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[#e4e7ec] bg-white text-[#667085] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#e4e7ec] bg-white text-[#667085] transition hover:bg-[#f8fafc] disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Next page"
               >
                 <svg viewBox="0 0 20 20" className="h-4 w-4 fill-current" aria-hidden="true">

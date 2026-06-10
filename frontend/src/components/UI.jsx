@@ -163,32 +163,41 @@ export function AppShell({ activeSection, onNavClick, children }) {
 
 export function SiteHeader() {
   return (
-    <div className="rounded-[20px] border border-[#e4e7ec] bg-white px-6 py-6 shadow-[0_2px_8px_rgba(16,24,40,0.05)]">
-      <h1 className="font-['Georgia',_serif] text-2xl font-bold text-[#101828] sm:text-3xl">
-        DU Preference Sheet Generator
-      </h1>
-      <p className="mt-2 text-base text-[#667085]">
-        Fill in your profile, subjects, and course preferences — we'll generate a smart preference list based on last year's DU cutoffs.
-      </p>
+    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-[16px] border border-[#e4e7ec] bg-white px-5 py-5 shadow-[0_2px_8px_rgba(16,24,40,0.05)]">
+      <div>
+        <h1 className="font-['Georgia',_serif] text-xl font-bold text-[#101828] sm:text-2xl">
+          DU Preference Sheet Generator
+        </h1>
+        <p className="mt-1 text-sm text-[#667085] sm:max-w-2xl">
+          Fill in your profile, subjects, and course preferences — we'll generate a smart preference list based on last year's DU cutoffs.
+        </p>
+      </div>
+      <div className="shrink-0 self-start sm:self-auto">
+        <img 
+          src="/cuet-pro-logo.png" 
+          alt="CUET PRO" 
+          className="h-16 sm:h-[72px] w-auto object-contain" 
+        />
+      </div>
     </div>
   )
 }
 
 export function PanelSection({ title, note, children }) {
   return (
-    <section className="min-w-0 rounded-[20px] border border-[#e4e7ec] bg-white">
-      <div className="flex flex-col gap-1 border-b border-[#eef2f6] px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
-        <h3 className="text-lg font-semibold text-[#101828] sm:text-xl">{title}</h3>
+    <section className="min-w-0 rounded-[16px] border border-[#e4e7ec] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.02)]">
+      <div className="flex flex-col gap-1 border-b border-[#eef2f6] px-4 py-3 sm:px-5 lg:flex-row lg:items-center lg:justify-between">
+        <h3 className="text-base font-semibold text-[#101828] sm:text-lg">{title}</h3>
         {note ? <p className="text-xs text-[#98a2b3] sm:text-sm lg:max-w-[55%] lg:text-right">{note}</p> : null}
       </div>
-      <div className="px-4 py-5 sm:px-6 sm:py-6">{children}</div>
+      <div className="px-4 py-4 sm:px-5 sm:py-5">{children}</div>
     </section>
   )
 }
 
 export function Field({ label, children }) {
   return (
-    <label className="grid gap-2 text-sm font-medium uppercase tracking-[0.12em] text-[#667085]">
+    <label className="grid gap-1.5 text-xs font-semibold uppercase tracking-[0.1em] text-[#667085]">
       {label}
       {children}
     </label>
@@ -196,34 +205,24 @@ export function Field({ label, children }) {
 }
 
 function MetricIcon({ type }) {
-  if (['subjects', 'preferences', 'score', 'generated-rows'].includes(type)) {
-    return (
-      <div className="mb-3 flex h-10 w-10 items-center justify-center">
-        <img src={`/${type}-icon.png`} alt="" className="h-10 w-10 object-contain" aria-hidden />
-      </div>
-    )
-  }
-  const styles = {
-    trend: { ring: 'bg-[#ecfdf3]', stroke: '#16a34a' },
-    list: { ring: 'bg-[#fff7ed]', stroke: '#f97316' },
-  }
-  const { ring, stroke } = styles[type] || { ring: 'bg-gray-100', stroke: '#888' }
-  return (
-    <div className={`mb-3 flex h-10 w-10 items-center justify-center rounded-full ${ring}`}>
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
-        {type === 'trend' ? <><path d="M4 16 9 11l4 4 7-9" /><path d="M15 6h5v5" /></> : null}
-        {type === 'list' ? <path d="M5 7h14M5 12h14M5 17h14" /> : null}
-      </svg>
-    </div>
-  )
+  if (type === 'subjects') return <svg className="h-5 w-5 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5v-15A2.5 2.5 0 0 1 6.5 2H20v20H6.5a2.5 2.5 0 0 1 0-5H20"/></svg>
+  if (type === 'preferences') return <svg className="h-5 w-5 text-amber-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
+  if (type === 'score') return <svg className="h-5 w-5 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+  if (type === 'generated-rows') return <svg className="h-5 w-5 text-indigo-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3v18h18"/><path d="M18 9l-5 5-3-3-5 5"/></svg>
+  
+  return <div className="h-5 w-5 bg-gray-200 rounded-full" />
 }
 
 export function MetricCard({ label, value, icon }) {
   return (
-    <article className="rounded-2xl border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_2px_8px_rgba(16,24,40,0.04)] sm:px-5">
-      <MetricIcon type={icon} />
-      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.14em] text-[#667085] sm:text-xs">{label}</span>
-      <strong className="block text-2xl font-semibold leading-none text-[#101828] sm:text-3xl">{value}</strong>
+    <article className="rounded-[16px] border border-[#e4e7ec] bg-white px-4 py-3 shadow-[0_1px_2px_rgba(16,24,40,0.02)] sm:px-4">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 border border-slate-100 shrink-0">
+          <MetricIcon type={icon} />
+        </div>
+        <span className="block text-[10px] font-bold uppercase tracking-[0.1em] text-[#667085] truncate">{label}</span>
+      </div>
+      <strong className="block text-xl font-bold leading-none text-[#101828] sm:text-2xl">{value}</strong>
     </article>
   )
 }
@@ -289,10 +288,10 @@ export function WhatsAppButton() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-6 pb-6">
-      <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-white px-5 py-4 sm:flex-row sm:justify-between">
+    <footer className="mt-4 pb-6">
+      <div className="flex flex-col items-center gap-2 rounded-[16px] border border-[#e4e7ec] bg-white px-5 py-3 sm:flex-row sm:justify-between">
         <p className="text-xs text-[#98a2b3]">&copy; 2024 CUET PRO Portal &mdash; DU Admissions Assistance</p>
-        <div className="flex items-center gap-4 text-xs">
+        <div className="flex items-center gap-4 text-[11px] font-medium uppercase tracking-wider">
           <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">Privacy Policy</a>
           <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">User Guide</a>
           <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">Contact Support</a>

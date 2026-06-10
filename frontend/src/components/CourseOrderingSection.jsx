@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { CustomDropdown } from './CustomDropdown'
 import { IconButton, PanelSection } from './UI'
-import { addToListButtonClass } from '../utils/styles'
+import { addToListButtonClass, inputClass } from '../utils/styles'
 
 export function CourseOrderingSection({
   remainingCourses, selectedCourse, onCourseChange,
   locked, statusMessage, selectedSubjectNames,
   preferences, onAdd, onMoveUp, onMoveDown, onRemove,
-  canBuildPreferences,
+  canBuildPreferences, onAddManual
 }) {
+  const [manualCourse, setManualCourse] = useState('')
+
   return (
     <PanelSection title="Course Selection & Ordering" note="Complete Student Details and select your subjects — eligible courses appear automatically.">
       <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
@@ -25,6 +28,28 @@ export function CourseOrderingSection({
           onClick={onAdd}
         >
           Add To List
+        </button>
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] items-center border-t border-[#e4e7ec] pt-3">
+        <input
+          type="text"
+          className={inputClass}
+          placeholder="Can't find a course? Type it manually..."
+          value={manualCourse}
+          onChange={(e) => setManualCourse(e.target.value)}
+          disabled={!canBuildPreferences || locked}
+        />
+        <button
+          type="button"
+          className={addToListButtonClass}
+          disabled={!canBuildPreferences || locked || !manualCourse.trim()}
+          onClick={() => {
+            onAddManual(manualCourse.trim())
+            setManualCourse('')
+          }}
+        >
+          Add Manually
         </button>
       </div>
 

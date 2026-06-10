@@ -268,6 +268,7 @@ function buildTokenMap(subjectEntries) {
  *   maxPossible:       number
  *   consolidatedScore: number           out of 1000
  *   fallback:          boolean          true if no eligibility rule found
+ *   isEligible:        boolean          true if student meets all requirements
  * }
  */
 function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
@@ -282,7 +283,7 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
     return {
       lockedSubjects: [], chosenSubjects: subjectEntries.map((e) => e.subject),
       subjectScores: Object.fromEntries(subjectEntries.map((e) => [e.subject, e.marks])),
-      rawTotal: totalRaw, maxPossible: maxPoss, consolidatedScore: score, fallback: true,
+      rawTotal: totalRaw, maxPossible: maxPoss, consolidatedScore: score, fallback: true, isEligible: true
     }
   }
 
@@ -298,6 +299,7 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
 
   // ── Step 1: Lock compulsory subjects ──────────────────────────────────────
   const locked = []
+  let isEligible = true
 
   if (rule.compulsory.length) {
     if (rule.compulsoryAny) {
@@ -307,20 +309,32 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
         .map((t) => ({ token: t, marks: tokenMap[t] }))
         .sort((a, b) => b.marks - a.marks)
 
-      if (available.length) locked.push(available[0].token)
+      if (available.length) {
+        locked.push(available[0].token)
+      } else {
+        isEligible = false
+      }
     } else {
       // Lock all compulsory tokens the student has
       for (const t of rule.compulsory) {
-        if (studentHasToken(tokenMap, t)) locked.push(t)
+        if (studentHasToken(tokenMap, t)) {
+          locked.push(t)
+        } else {
+          isEligible = false
+        }
       }
     }
   }
 
   // ── Step 2: Language slot ─────────────────────────────────────────────────
   let chosenLang = null
-  if (rule.languageReq && studentLangs.length) {
-    chosenLang = studentLangs.reduce((best, e) => e.marks > best.marks ? e : best).subject
-    chosenLang = norm(chosenLang)
+  if (rule.languageReq) {
+    if (studentLangs.length) {
+      chosenLang = studentLangs.reduce((best, e) => e.marks > best.marks ? e : best).subject
+      chosenLang = norm(chosenLang)
+    } else {
+      isEligible = false
+    }
   }
 
   // ── Step 3: Fill remaining optional domain slots ──────────────────────────
@@ -347,7 +361,11 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
   if (chosenLang)          chosenSubjects.push(chosenLang)
   chosenSubjects.push(...locked)
   chosenSubjects.push(...chosenOptionals)
-  if (rule.usesGat && gatEntry) chosenSubjects.push(GAT_LABEL)
+  
+  if (rule.usesGat) {
+    if (gatEntry) chosenSubjects.push(GAT_LABEL)
+    else isEligible = false
+  }
 
   // ── Step 5: Normalise out of 1000
   // maxPossible = only the subjects that count for THIS course × 250
@@ -372,6 +390,7 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
     maxPossible,
     consolidatedScore,
     fallback: false,
+    isEligible,
   }
 }
 
