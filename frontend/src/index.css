@@ -2,9 +2,10 @@
 
 :root {
   font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
+  /* Base font size thodi badi — 17px se sab proportionally bada dikhega */
+  font-size: 17px;
   color: #101828;
-  background: #ffffff;
+  background: #f5f7fa;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -26,7 +27,7 @@ body {
   min-width: 320px;
   width: 100%;
   overflow-x: hidden;
-  background: #ffffff;
+  background: #f5f7fa;
 }
 
 #root {
