@@ -290,7 +290,7 @@ function App() {
               </span>
             </button>
             {i < steps.length - 1 && (
-              <div className="mx-1 h-px flex-1 bg-[#e4e7ec]" />
+              <div className="mx-1 h-px flex-1 bg-[#e4e7ec] sm:hidden" />
             )}
           </div>
         ))}

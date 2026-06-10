@@ -245,7 +245,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
           <table className="w-full min-w-0 border-collapse bg-white text-left text-sm">
             <thead className="bg-[#f8fafc] text-xs uppercase tracking-[0.18em] text-[#667085]">
               <tr>
-                            <th className="px-3 py-3 sm:px-4">#</th>
+                <th className="px-3 py-3 sm:px-4">#</th>
                 <th className="px-3 py-3 sm:px-4">College</th>
                 <th className="px-3 py-3 sm:px-4">Course</th>
                 <th className="hidden px-3 py-3 sm:table-cell sm:px-4">Prev. Cutoff</th>
