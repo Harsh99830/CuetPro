@@ -248,7 +248,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                 <th className="px-3 py-3 sm:px-4">#</th>
                 <th className="px-3 py-3 sm:px-4">College</th>
                 <th className="px-3 py-3 sm:px-4">Course</th>
-                <th className="hidden px-3 py-3 sm:table-cell sm:px-4">Prev. Cutoff</th>
+                <th className="px-3 py-3 sm:px-4">Prev. Cutoff</th>
                 <th className="px-3 py-3 sm:px-4">Chances</th>
               </tr>
             </thead>
@@ -280,7 +280,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                         <CollegeCell college={row.college} />
                       </td>
                       <td className="px-3 py-3 text-xs sm:px-4 sm:text-sm">{row.course}</td>
-                      <td className="hidden px-3 py-3 sm:table-cell sm:px-4">{row.requiredCutoff.toFixed(2)}</td>
+                      <td className="px-3 py-3 sm:px-4">{row.requiredCutoff.toFixed(2)}</td>
                       <td className="px-3 py-3 sm:px-4">
                         <ChanceBadge chance={row.chance} tone={chanceBadgeClass(row.chance)} />
                       </td>
