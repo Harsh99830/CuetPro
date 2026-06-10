@@ -54,7 +54,7 @@ export function SubjectsSection({ subjects, onUpdate }) {
           return (
             <div
               key={item.label}
-              className="grid gap-3 border-b border-[#eef2f6] bg-white px-4 py-4 last:border-b-0 lg:grid-cols-[70px_minmax(0,1fr)_minmax(150px,200px)]"
+              className="grid gap-3 border-b border-[#eef2f6] bg-white px-3 py-4 last:border-b-0 sm:px-4 lg:grid-cols-[70px_minmax(0,1fr)_minmax(150px,200px)]"
               onBlur={(e) => handleRowBlur(index, e)}
             >
               <span className="self-start pt-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#98a2b3]">

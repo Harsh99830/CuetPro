@@ -10,7 +10,7 @@ export function CourseOrderingSection({
 }) {
   return (
     <PanelSection title="Course Selection & Ordering" note="Complete Student Details and select your subjects — eligible courses appear automatically.">
-      <div className="grid gap-3 lg:grid-cols-[minmax(0,1fr)_auto]">
+      <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto]">
         <CustomDropdown
           value={selectedCourse}
           onChange={(e) => onCourseChange(e.target.value)}
@@ -33,15 +33,17 @@ export function CourseOrderingSection({
           preferences.map((course, index) => (
             <li
               key={`${course}-${index}`}
-              className="grid gap-2 rounded-2xl border border-[#e4e7ec] bg-[#fcfcfd] p-3 md:grid-cols-[auto_minmax(0,1fr)_auto_auto_auto]"
+              className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-[#fcfcfd] p-3"
             >
-              <strong className="flex min-w-12 items-center justify-center rounded-xl bg-[#e8f1ff] px-3 py-2 text-sm font-bold text-[#2563eb]">
+              <strong className="flex min-w-10 items-center justify-center rounded-xl bg-[#e8f1ff] px-2.5 py-2 text-sm font-bold text-[#2563eb]">
                 #{index + 1}
               </strong>
-              <span className="min-w-0 self-center text-sm font-medium text-[#101828]">{course}</span>
-              <IconButton label="Move up" disabled={index === 0} onClick={() => onMoveUp(index)}>↑</IconButton>
-              <IconButton label="Move down" disabled={index === preferences.length - 1} onClick={() => onMoveDown(index)}>↓</IconButton>
-              <IconButton label="Remove preference" onClick={() => onRemove(index)}>×</IconButton>
+              <span className="min-w-0 flex-1 self-center text-sm font-medium text-[#101828]">{course}</span>
+              <div className="flex gap-1 shrink-0">
+                <IconButton label="Move up" disabled={index === 0} onClick={() => onMoveUp(index)}>↑</IconButton>
+                <IconButton label="Move down" disabled={index === preferences.length - 1} onClick={() => onMoveDown(index)}>↓</IconButton>
+                <IconButton label="Remove preference" onClick={() => onRemove(index)}>×</IconButton>
+              </div>
             </li>
           ))
         ) : (

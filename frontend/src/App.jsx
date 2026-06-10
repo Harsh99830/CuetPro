@@ -233,7 +233,7 @@ function App() {
     <AppShell activeSection={activeSection} onNavClick={setActiveSection}>
 
       {/* ── Metric cards row ── */}
-      <section className="mb-6 grid grid-cols-2 gap-4 md:grid-cols-4">
+      <section className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4">
         <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="subjects" />
         <MetricCard label="Preferences" value={String(preferences.length)} icon="preferences" />
         <MetricCard label="Est. Score" value={generatedScore} icon="score" />
@@ -241,13 +241,14 @@ function App() {
       </section>
 
       {/* ── Progress stepper ── */}
-      <div className="mb-6 flex items-center gap-0 overflow-x-auto rounded-[16px] border border-[#e4e7ec] bg-white px-5 py-4">
+      <div className="mb-6 overflow-x-auto rounded-[16px] border border-[#e4e7ec] bg-white px-3 py-3 sm:px-5 sm:py-4">
+        <div className="flex min-w-max items-center gap-0">
         {steps.map((step, i) => (
           <div key={step.id} className="flex shrink-0 items-center">
             <button
               type="button"
               onClick={() => setActiveSection(step.id)}
-              className={`flex items-center gap-2.5 rounded-xl px-4 py-2.5 text-base font-medium transition ${
+              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition sm:gap-2.5 sm:px-4 sm:py-2.5 sm:text-base ${
                 activeSection === step.id
                   ? 'bg-[#0c2754] text-white'
                   : step.done
@@ -255,7 +256,7 @@ function App() {
                   : 'text-[#98a2b3]'
               }`}
             >
-              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
+              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold sm:h-6 sm:w-6 sm:text-xs ${
                 activeSection === step.id
                   ? 'bg-white/20 text-white'
                   : step.done
@@ -267,17 +268,18 @@ function App() {
               {step.label}
             </button>
             {i < steps.length - 1 && (
-              <div className="mx-2 h-px w-8 bg-[#e4e7ec]" />
+              <div className="mx-1 h-px w-4 bg-[#e4e7ec] sm:mx-2 sm:w-8" />
             )}
           </div>
         ))}
+        </div>
       </div>
 
       {/* ── Section: Student Profile ── */}
       {activeSection === 'profile' && (
         <div className="grid gap-5">
           <PanelSection title="Student Details" note="Personalises your course recommendations">
-            <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               <label className="grid gap-2 text-sm font-medium uppercase tracking-[0.12em] text-[#667085]">
                 Student Name
                 <input
@@ -300,7 +302,7 @@ function App() {
               type="button"
               onClick={() => setActiveSection('subjects')}
               disabled={!profileReady}
-              className="rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50"
+              className="w-full rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto"
             >
               Next: Add Subjects →
             </button>
@@ -312,11 +314,11 @@ function App() {
       {activeSection === 'subjects' && (
         <div className="grid gap-5">
           <SubjectsSection subjects={subjects} onUpdate={updateSubject} />
-          <div className="flex justify-between">
-            <button type="button" onClick={() => setActiveSection('profile')} className="rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7]">
+          <div className="flex flex-col gap-3 sm:flex-row sm:justify-between">
+            <button type="button" onClick={() => setActiveSection('profile')} className="w-full rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7] sm:w-auto">
               ← Back
             </button>
-            <button type="button" onClick={() => setActiveSection('courses')} disabled={!canBuildPreferences} className="rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50">
+            <button type="button" onClick={() => setActiveSection('courses')} disabled={!canBuildPreferences} className="w-full rounded-2xl bg-[#0c2754] px-7 py-3.5 text-base font-semibold text-white shadow-sm transition hover:bg-[#0a2146] disabled:cursor-not-allowed disabled:opacity-50 sm:w-auto">
               Next: Select Courses →
             </button>
           </div>
@@ -345,14 +347,14 @@ function App() {
           <div className="rounded-[20px] bg-[#101828] px-6 py-6 text-white shadow-[0_12px_32px_rgba(16,24,40,0.16)]">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <p className="text-2xl font-semibold">Ready to generate?</p>
-                <p className="mt-1 text-base text-white/60">Make sure all subject marks are entered correctly.</p>
+                <p className="text-xl font-semibold sm:text-2xl">Ready to generate?</p>
+                <p className="mt-1 text-sm text-white/60 sm:text-base">Make sure all subject marks are entered correctly.</p>
               </div>
-              <div className="flex flex-wrap gap-3">
-                <button type="button" onClick={handleGenerate} className={footerPrimaryButtonClass} disabled={!canGenerate}>
+              <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap">
+                <button type="button" onClick={handleGenerate} className={`${footerPrimaryButtonClass} w-full sm:w-auto`} disabled={!canGenerate}>
                   Generate Sheet
                 </button>
-                <button type="button" className={footerSecondaryButtonClass} onClick={handleReset}>
+                <button type="button" className={`${footerSecondaryButtonClass} w-full sm:w-auto`} onClick={handleReset}>
                   Reset All
                 </button>
               </div>
@@ -360,7 +362,7 @@ function App() {
           </div>
 
           <div className="flex justify-start">
-            <button type="button" onClick={() => setActiveSection('subjects')} className="rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7]">
+            <button type="button" onClick={() => setActiveSection('subjects')} className="w-full rounded-2xl border border-[#e4e7ec] bg-white px-7 py-3.5 text-base font-semibold text-[#667085] transition hover:bg-[#f2f4f7] sm:w-auto">
               ← Back
             </button>
           </div>

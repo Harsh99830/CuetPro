@@ -175,11 +175,11 @@ export function SiteHeader() {
 export function PanelSection({ title, note, children }) {
   return (
     <section className="min-w-0 rounded-[20px] border border-[#e4e7ec] bg-white">
-      <div className="flex flex-col gap-1 border-b border-[#eef2f6] px-6 py-4 lg:flex-row lg:items-center lg:justify-between">
-        <h3 className="text-xl font-semibold text-[#101828]">{title}</h3>
-        {note ? <p className="text-sm text-[#98a2b3] lg:max-w-[55%] lg:text-right">{note}</p> : null}
+      <div className="flex flex-col gap-1 border-b border-[#eef2f6] px-4 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between">
+        <h3 className="text-lg font-semibold text-[#101828] sm:text-xl">{title}</h3>
+        {note ? <p className="text-xs text-[#98a2b3] sm:text-sm lg:max-w-[55%] lg:text-right">{note}</p> : null}
       </div>
-      <div className="px-6 py-6">{children}</div>
+      <div className="px-4 py-5 sm:px-6 sm:py-6">{children}</div>
     </section>
   )
 }
@@ -218,10 +218,10 @@ function MetricIcon({ type }) {
 
 export function MetricCard({ label, value, icon }) {
   return (
-    <article className="rounded-2xl border border-[#e4e7ec] bg-white px-5 py-4 shadow-[0_2px_8px_rgba(16,24,40,0.04)]">
+    <article className="rounded-2xl border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_2px_8px_rgba(16,24,40,0.04)] sm:px-5">
       <MetricIcon type={icon} />
-      <span className="mb-1 block text-xs font-medium uppercase tracking-[0.16em] text-[#667085]">{label}</span>
-      <strong className="block text-3xl font-semibold leading-none text-[#101828]">{value}</strong>
+      <span className="mb-1 block text-[10px] font-medium uppercase tracking-[0.14em] text-[#667085] sm:text-xs">{label}</span>
+      <strong className="block text-2xl font-semibold leading-none text-[#101828] sm:text-3xl">{value}</strong>
     </article>
   )
 }
