@@ -22,7 +22,7 @@ export const categoryToCutoffKey = {
 
 export const initialForm = {
   name: '', gender: '', category: '', stream: '',
-  displayMode: 'college-first',
+  displayMode: 'college-first', rollNumber: '',
 }
 
 export const initialSubjects = Array.from({ length: 5 }, (_, index) => ({

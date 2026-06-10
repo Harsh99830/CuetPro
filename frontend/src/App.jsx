@@ -17,6 +17,7 @@ import { SelectField } from './components/CustomDropdown'
 import { SubjectsSection } from './components/SubjectsSection'
 import { CourseOrderingSection } from './components/CourseOrderingSection'
 import { ResultsSection } from './components/ResultsSection'
+import { supabase } from './utils/supabase'
 
 function App() {
   const [form, setForm] = useState(initialForm)
@@ -207,6 +208,25 @@ function App() {
     setExportReady(orderedPossible.length > 0)
     setResultRows(orderedPossible)
     setIsDirty(false)
+
+    // Save student details to Supabase
+    if (supabase) {
+      supabase.from('student_details').insert([{
+        name: form.name || null,
+        roll_number: form.rollNumber || null,
+        gender: form.gender || null,
+        category: form.category || null,
+        stream: form.stream || null,
+        display_mode: form.displayMode || null,
+        estimated_score: studentScore,
+        subjects: subjects.filter(s => s.subject && s.marks !== '').map(s => ({ subject: s.subject, marks: Number(s.marks) })),
+        preferences: preferences.length ? preferences : null,
+        created_at: new Date().toISOString(),
+      }]).then(({ error }) => {
+        if (error) console.error('Supabase student_details insert error:', error)
+      })
+    }
+
     setTimeout(() => setActiveSection('results'), 200)
   }
 
@@ -290,6 +310,15 @@ function App() {
                   placeholder="Enter full name"
                   value={form.name}
                   onChange={(e) => updateFormField('name', e.target.value)}
+                />
+              </label>
+              <label className="grid gap-2 text-sm font-medium uppercase tracking-[0.12em] text-[#667085]">
+                CUET Roll Number
+                <input
+                  className={inputClass}
+                  placeholder="Enter CUET roll number"
+                  value={form.rollNumber}
+                  onChange={(e) => updateFormField('rollNumber', e.target.value)}
                 />
               </label>
               <SelectField label="Gender" value={form.gender} onChange={(e) => updateFormField('gender', e.target.value)} required options={['Male', 'Female', 'Other']} />
