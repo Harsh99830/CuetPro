@@ -287,9 +287,15 @@ export function WhatsAppButton() {
 
 export function SiteFooter() {
   return (
-    <footer className="mt-6 pb-6 text-center text-sm text-[#98a2b3]">
-      <p>&copy; 2024 CUET PRO Portal. Designed for DU Admissions Assistance.</p>
-      <p className="mt-1">Privacy Policy &nbsp;·&nbsp; User Guide &nbsp;·&nbsp; Contact Support</p>
+    <footer className="mt-6 pb-6">
+      <div className="flex flex-col items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-white px-5 py-4 sm:flex-row sm:justify-between">
+        <p className="text-xs text-[#98a2b3]">&copy; 2024 CUET PRO Portal &mdash; DU Admissions Assistance</p>
+        <div className="flex items-center gap-4 text-xs">
+          <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">Privacy Policy</a>
+          <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">User Guide</a>
+          <a href="#" className="text-[#667085] transition hover:text-[#0c2754]">Contact Support</a>
+        </div>
+      </div>
     </footer>
   )
 }

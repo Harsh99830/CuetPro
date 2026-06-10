@@ -241,14 +241,14 @@ function App() {
       </section>
 
       {/* ── Progress stepper ── */}
-      <div className="mb-6 overflow-x-auto rounded-[16px] border border-[#e4e7ec] bg-white px-3 py-3 sm:px-5 sm:py-4">
-        <div className="flex min-w-max items-center gap-0">
+      <div className="mb-6 rounded-[16px] border border-[#e4e7ec] bg-white px-3 py-3 sm:px-5 sm:py-4">
+        <div className="flex items-center justify-between">
         {steps.map((step, i) => (
-          <div key={step.id} className="flex shrink-0 items-center">
+          <div key={step.id} className="flex flex-1 items-center">
             <button
               type="button"
               onClick={() => setActiveSection(step.id)}
-              className={`flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition sm:gap-2.5 sm:px-4 sm:py-2.5 sm:text-base ${
+              className={`flex items-center gap-2 rounded-xl px-2 py-2 text-sm font-medium transition sm:px-4 sm:py-2.5 ${
                 activeSection === step.id
                   ? 'bg-[#0c2754] text-white'
                   : step.done
@@ -256,7 +256,7 @@ function App() {
                   : 'text-[#98a2b3]'
               }`}
             >
-              <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold sm:h-6 sm:w-6 sm:text-xs ${
+              <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold ${
                 activeSection === step.id
                   ? 'bg-white/20 text-white'
                   : step.done
@@ -265,10 +265,12 @@ function App() {
               }`}>
                 {step.done && activeSection !== step.id ? '✓' : i + 1}
               </span>
-              {step.label}
+              <span className={activeSection === step.id ? 'inline' : 'hidden sm:inline'}>
+                {step.label}
+              </span>
             </button>
             {i < steps.length - 1 && (
-              <div className="mx-1 h-px w-4 bg-[#e4e7ec] sm:mx-2 sm:w-8" />
+              <div className="mx-1 h-px flex-1 bg-[#e4e7ec]" />
             )}
           </div>
         ))}
