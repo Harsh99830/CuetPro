@@ -8,9 +8,10 @@ import {
   normalizeCourseName, formatProgram, inferStream, evaluateCombinationRule,
   extractCutoffForCategory, scoreCoursePreferenceOrder,
   classifyChance, prioritizeGeneratedRows, prioritizeCourseFirstRows,
-  readSubjectEntries, computeStudentScore, sanitizeFileName, loadScript, cleanCollegeName,
+  readSubjectEntries, sanitizeFileName, loadScript, cleanCollegeName,
 } from './utils/helpers'
 import { footerPrimaryButtonClass, footerSecondaryButtonClass, inputClass } from './utils/styles'
+import { computeSmartScore } from './utils/scoreEngine'
 
 import { AppShell, MetricCard, PanelSection, Field, SiteFooter } from './components/UI'
 import { SelectField } from './components/CustomDropdown'
@@ -167,9 +168,19 @@ function App() {
     if (!form.stream) { window.alert('Please select a stream first.'); return }
     if (!duData.length || !courseRequirements.length) { window.alert('Final generation needs the DU cutoff and course requirement datasets.'); return }
 
-    const studentScore = computeStudentScore(subjectEntries)
     const selectedCourses = preferences.length ? preferences : streamCourses[form.stream] || []
     const categoryKey = categoryToCutoffKey[form.category] || 'UR'
+
+    // Per-course smart score: compulsory locking + best-subject auto-selection
+    const courseScoreCache = {}
+    const getCourseScore = (course) => {
+      if (courseScoreCache[course] === undefined) {
+        courseScoreCache[course] = computeSmartScore(subjectEntries, course, courseRequirements)
+      }
+      return courseScoreCache[course]
+    }
+    // Flat fallback (no specific course) — used for display header & Supabase log
+    const studentScore = computeSmartScore(subjectEntries)
 
     const possible = duData
       .filter((item) => selectedCourses.includes(formatProgram(item.program)))
@@ -186,14 +197,15 @@ function App() {
         const requiredCutoff = extractCutoffForCategory(item.cutoffs, categoryKey)
         if (requiredCutoff === null) return null
         const course = formatProgram(item.program)
-        const chance = classifyChance(studentScore, requiredCutoff)
-        const diffAbs = Math.abs(studentScore - requiredCutoff)
+        const courseSmartScore = getCourseScore(course)
+        const chance = classifyChance(courseSmartScore, requiredCutoff)
+        const diffAbs = Math.abs(courseSmartScore - requiredCutoff)
         const prefIndex = preferences.length ? preferences.indexOf(course) : -1
         const normalizedPref = prefIndex === -1 ? 0.4 : 1 - prefIndex / Math.max(1, preferences.length)
         const collegeRank = Number(item.rank) || 100
         const collegeQuality = 1 - (Math.min(Math.max(collegeRank, 1), 100) - 1) / 99
         const smartScore = collegeQuality * 0.45 + normalizedPref * 0.25 + Math.max(0, 1 - diffAbs / 180) * 0.2 + Math.min(requiredCutoff / 1000, 1) * 0.1
-        return { college: cleanCollegeName(item.college), course, requiredCutoff, studentScore, chance, smartScore, collegeRank }
+        return { college: cleanCollegeName(item.college), course, requiredCutoff, studentScore: courseSmartScore, chance, smartScore, collegeRank }
       })
       .filter(Boolean)
       .sort((a, b) => b.smartScore - a.smartScore || a.collegeRank - b.collegeRank || b.requiredCutoff - a.requiredCutoff || a.college.localeCompare(b.college))
