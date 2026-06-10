@@ -18,7 +18,7 @@
 import { languages } from './constants'
 
 // ─── Constants (mirror Python engine) ────────────────────────────────────────
-const MARKS_PER_SUBJECT = 200   // CUET max per paper
+const MARKS_PER_SUBJECT = 250   // CUET max per paper
 const MAX_SCORE        = 1000   // Merit list ceiling
 
 // ─── Subject token list ───────────────────────────────────────────────────────
@@ -308,7 +308,6 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
         .sort((a, b) => b.marks - a.marks)
 
       if (available.length) locked.push(available[0].token)
-      // (if none available, silently skip — eligibility check is App.jsx's job)
     } else {
       // Lock all compulsory tokens the student has
       for (const t of rule.compulsory) {
@@ -330,7 +329,6 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
   const domainSlotsAvailable = rule.totalSubjects - langSlots - usedSlots
 
   // Optional candidates: domain subjects not already locked
-  // Map back to original entry marks using tokenMap
   const optionalCandidates = []
   for (const entry of studentDomain) {
     const tokens    = subjectToTokens(entry.subject)
@@ -351,7 +349,10 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
   chosenSubjects.push(...chosenOptionals)
   if (rule.usesGat && gatEntry) chosenSubjects.push(GAT_LABEL)
 
-  // ── Step 5: Compute scores ────────────────────────────────────────────────
+  // ── Step 5: Normalise out of 1000
+  // maxPossible = only the subjects that count for THIS course × 250
+  // e.g. course needs 4 subjects → max = 4 × 250 = 1000
+  //      course needs 3 subjects → max = 3 × 250 = 750 → scaled to 1000
   const subjectScores = {}
   for (const subj of chosenSubjects) {
     subjectScores[subj] = tokenMap[subj] ?? (subj === GAT_LABEL && gatEntry ? gatEntry.marks : 0)
@@ -379,10 +380,6 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
  *
  * When called with just subjectEntries (old usage), falls back to plain average.
  * When called with courseName + courseRequirements, uses the full engine.
- *
- * Usage in App.jsx:
- *   import { computeSmartScore } from './utils/scoreEngine'
- *   const studentScore = computeSmartScore(subjectEntries, course, courseRequirements)
  */
 export function computeSmartScore(subjectEntries, courseName, courseRequirements) {
   if (!courseName || !courseRequirements?.length) {

@@ -90,13 +90,15 @@ function App() {
   }, [courseRequirementIndex])
 
   const availableCourses = useMemo(() => {
-    return allCourses
+    // ── STREAM FILTER: only show courses from the student's selected stream ──
+    const streamFilteredCourses = form.stream ? (streamCourses[form.stream] || []) : allCourses
+    return streamFilteredCourses
       .filter((course) => isCourseEligible(course, selectedSubjectNames))
       .sort((a, b) => {
         const diff = scoreCoursePreferenceOrder(b, selectedSubjectNames) - scoreCoursePreferenceOrder(a, selectedSubjectNames)
         return diff !== 0 ? diff : a.localeCompare(b)
       })
-  }, [allCourses, selectedSubjectNames, isCourseEligible])
+  }, [allCourses, streamCourses, form.stream, selectedSubjectNames, isCourseEligible])
 
   const remainingCourses = availableCourses.filter((c) => !preferences.includes(c))
 
