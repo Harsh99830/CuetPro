@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { ChanceBadge, CollegeCell } from './UI'
@@ -10,6 +10,8 @@ const PAGE_SIZE = 30
 
 export function ResultsSection({ resultRows, setResultRows, summary, exportReady, studentName, isDirty, onRegenerateClick }) {
   const [draggedIndex, setDraggedIndex] = useState(null)
+  const touchDragIndex = useRef(null)
+  const touchTargetIndex = useRef(null)
   const [page, setPage] = useState(0)
   const [showModal, setShowModal] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
@@ -218,27 +220,8 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
         </div>
 
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-xs text-[#98a2b3] sm:text-sm">Drag a college row to shift it up or down in your final preference order.</p>
+          <p className="text-xs font-bold text-[#101828] sm:text-sm">Drag or touch-hold a college row to shift it up or down in your final preference order.</p>
           <div className="flex flex-wrap gap-3">
-            <button
-              type="button"
-              className="flex items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-white px-4 py-2 text-sm font-semibold text-[#667085] transition hover:bg-[#f8fafc]"
-              onClick={() => setResultRows((rows) => {
-                return [...rows].sort((a, b) => {
-                  // Sort by how much the student's score exceeds the cutoff (best fit first)
-                  const aMargin = a.studentScore - a.requiredCutoff
-                  const bMargin = b.studentScore - b.requiredCutoff
-                  if (bMargin !== aMargin) return bMargin - aMargin
-                  // Then by college rank
-                  return a.collegeRank - b.collegeRank
-                })
-              })}
-            >
-              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2" aria-hidden="true">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
-              </svg>
-              Sort by Best Fit
-            </button>
             <button
               type="button"
               className={`${addToListButtonClass} flex w-full items-center justify-center gap-2 sm:w-auto`}
@@ -292,7 +275,31 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                         setDraggedIndex(null)
                       }}
                       onDragEnd={() => setDraggedIndex(null)}
-                      className="cursor-grab border-t border-[#eef2f6] hover:bg-[#f8fafc]"
+                      onTouchStart={() => { touchDragIndex.current = globalIndex }}
+                      onTouchMove={(e) => {
+                        const touch = e.touches[0]
+                        const el = document.elementFromPoint(touch.clientX, touch.clientY)
+                        const row = el?.closest('tr[data-index]')
+                        if (row) touchTargetIndex.current = Number(row.dataset.index)
+                      }}
+                      onTouchEnd={() => {
+                        const from = touchDragIndex.current
+                        const to = touchTargetIndex.current
+                        if (from !== null && to !== null && from !== to) {
+                          setResultRows((current) => {
+                            const next = [...current]
+                            const [moved] = next.splice(from, 1)
+                            next.splice(to, 0, moved)
+                            return next
+                          })
+                        }
+                        touchDragIndex.current = null
+                        touchTargetIndex.current = null
+                      }}
+                      data-index={globalIndex}
+                      className={`cursor-grab border-t border-[#eef2f6] hover:bg-[#f8fafc] ${
+                        draggedIndex === globalIndex ? 'opacity-50' : ''
+                      }`}
                     >
                       <td className="px-3 py-3 text-[#667085] sm:px-4">{globalIndex + 1}</td>
                       <td className="px-3 py-3 sm:px-4">
