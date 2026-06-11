@@ -231,9 +231,9 @@ function App() {
     setResultRows(orderedPossible)
     setIsDirty(false)
 
-    // Save student details to Supabase
+    // Save to Supabase — only if not already saved for this student
     if (supabase) {
-      supabase.from('student_details').insert([{
+      const saveData = {
         name: form.name || null,
         roll_number: form.rollNumber || null,
         gender: form.gender || null,
@@ -241,12 +241,37 @@ function App() {
         stream: form.stream || null,
         display_mode: form.displayMode || null,
         estimated_score: studentScore,
-        subjects: subjects.filter(s => s.subject && s.marks !== '').map(s => ({ subject: s.subject, marks: Number(s.marks) })),
+        subjects: subjectEntries.map((s) => ({ subject: s.subject, marks: s.marks })),
         preferences: preferences.length ? preferences : null,
         created_at: new Date().toISOString(),
-      }]).then(({ error }) => {
-        if (error) console.error('Supabase student_details insert error:', error)
-      })
+      }
+
+      // Check if a record with same name + roll_number already exists
+      supabase
+        .from('student_details')
+        .select('id')
+        .eq('name', saveData.name)
+        .eq('roll_number', saveData.roll_number)
+        .maybeSingle()
+        .then(({ data, error }) => {
+          if (error) {
+            console.error('Supabase check error:', error)
+            return
+          }
+          if (data) {
+            // Record already exists — skip
+            console.log('Student already saved, skipping insert.')
+            return
+          }
+          // Insert new record
+          supabase
+            .from('student_details')
+            .insert([saveData])
+            .then(({ error: insertError }) => {
+              if (insertError) console.error('Supabase insert error:', insertError)
+              else console.log('Student details saved to Supabase.')
+            })
+        })
     }
     
     // Auto-scroll to results logic
