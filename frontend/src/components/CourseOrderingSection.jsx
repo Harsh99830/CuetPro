@@ -55,7 +55,14 @@ export function CourseOrderingSection({
 
       <ul className="mt-4 grid gap-2">
         {preferences.length ? (
-          preferences.map((course, index) => (
+          <>
+            <li className="flex items-center gap-2 rounded-2xl bg-[#f0f5ff] px-4 py-2.5">
+              <svg viewBox="0 0 24 24" className="h-4 w-4 shrink-0 fill-none stroke-[#0c2754] stroke-2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l4-4 4 4M8 15l4 4 4-4" />
+              </svg>
+              <p className="text-xs font-medium text-[#0c2754]">Use the <strong>↑ ↓</strong> arrows to rearrange your course preference order. Higher = more preferred.</p>
+            </li>
+            {preferences.map((course, index) => (
             <li
               key={`${course}-${index}`}
               className="flex flex-wrap items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-[#fcfcfd] p-3"
@@ -70,7 +77,8 @@ export function CourseOrderingSection({
                 <IconButton label="Remove preference" onClick={() => onRemove(index)}>×</IconButton>
               </div>
             </li>
-          ))
+            ))}
+          </>
         ) : (
           <li className="rounded-[24px] border border-dashed border-[#dbe3f0] bg-[#fcfdff] px-6 py-12 text-center">
             <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f2f5fb] text-2xl text-[#c7d2e6]">≋</div>

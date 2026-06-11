@@ -222,6 +222,25 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
           <div className="flex flex-wrap gap-3">
             <button
               type="button"
+              className="flex items-center gap-2 rounded-2xl border border-[#e4e7ec] bg-white px-4 py-2 text-sm font-semibold text-[#667085] transition hover:bg-[#f8fafc]"
+              onClick={() => setResultRows((rows) => {
+                return [...rows].sort((a, b) => {
+                  // Sort by how much the student's score exceeds the cutoff (best fit first)
+                  const aMargin = a.studentScore - a.requiredCutoff
+                  const bMargin = b.studentScore - b.requiredCutoff
+                  if (bMargin !== aMargin) return bMargin - aMargin
+                  // Then by college rank
+                  return a.collegeRank - b.collegeRank
+                })
+              })}
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4 fill-none stroke-current stroke-2" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M16 3h5v5M4 20L21 3M21 16v5h-5M15 15l6 6M4 4l5 5" />
+              </svg>
+              Sort by Best Fit
+            </button>
+            <button
+              type="button"
               className={`${addToListButtonClass} flex w-full items-center justify-center gap-2 sm:w-auto`}
               disabled={!exportReady || isDownloading}
               onClick={handleDownloadClick}
