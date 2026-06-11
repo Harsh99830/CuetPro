@@ -169,6 +169,18 @@ function App() {
     const selectedCourses = preferences.length ? preferences : streamCourses[form.stream] || []
     const categoryKey = categoryToCutoffKey[form.category] || 'UR'
 
+    // Check if student has required subjects for each preference
+    const ineligibleCourses = preferences.filter(
+      (course) => !isCourseEligible(course)
+    )
+    if (ineligibleCourses.length > 0) {
+      const list = ineligibleCourses.map((c) => `• ${c}`).join('\n')
+      const proceed = window.confirm(
+        `You do not have the required subjects for the following course(s):\n\n${list}\n\nThese will be skipped. Continue?`
+      )
+      if (!proceed) return
+    }
+
     // Per-course smart score: compulsory locking + best-subject auto-selection
     const courseScoreCache = {}
     const getCourseScore = (course) => {

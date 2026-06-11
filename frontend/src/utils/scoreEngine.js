@@ -159,13 +159,12 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
   const eligText = findEligibility(courseName, courseRequirements)
 
   if (!eligText) {
-    const totalRaw  = subjectEntries.reduce((s, e) => s + e.marks, 0)
-    const maxPoss   = subjectEntries.length * MARKS_PER_SUBJECT
-    const score     = maxPoss ? Math.round((totalRaw / maxPoss) * MAX_SCORE) : 0
+    const top4 = [...subjectEntries].sort((a, b) => b.marks - a.marks).slice(0, 4)
+    const score = top4.reduce((s, e) => s + e.marks, 0)
     return {
       lockedSubjects: [], chosenSubjects: subjectEntries.map((e) => e.subject),
       subjectScores: Object.fromEntries(subjectEntries.map((e) => [e.subject, e.marks])),
-      rawTotal: totalRaw, maxPossible: maxPoss, consolidatedScore: score, fallback: true, isEligible: true
+      rawTotal: score, maxPossible: 1000, consolidatedScore: score, fallback: true, isEligible: true
     }
   }
 
@@ -268,16 +267,16 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
        }
     }
 
-    const maxPossible = (chosenSubjects.length || 1) * MARKS_PER_SUBJECT
     const meritTotal = chosenSubjects.reduce((s, subj) => s + (subjectScores[subj] || 0), 0)
-    const consolidatedScore = maxPossible ? Math.round((meritTotal / maxPossible) * MAX_SCORE) : 0
+    // DU merit score = raw sum of the counted subjects (max 1000 for 4 subjects × 250)
+    const consolidatedScore = meritTotal
 
     const result = {
       lockedSubjects: locked,
       chosenSubjects: isScience ? [...chosenLangs, ...chosenSubjects] : chosenSubjects,
       subjectScores,
       rawTotal: meritTotal,
-      maxPossible,
+      maxPossible: 1000,
       consolidatedScore,
       fallback: false,
       isEligible
@@ -302,9 +301,9 @@ function getScoreBreakdown(subjectEntries, courseName, courseRequirements) {
 
 export function computeSmartScore(subjectEntries, courseName, courseRequirements) {
   if (!courseName || !courseRequirements?.length) {
-    const totalRaw   = subjectEntries.reduce((s, e) => s + e.marks, 0)
-    const maxPossible = subjectEntries.length * MARKS_PER_SUBJECT
-    return maxPossible ? Math.round((totalRaw / maxPossible) * MAX_SCORE) : 0
+    // No course context — use top 4 marks (DU merit = best 4 out of all subjects)
+    const top4 = [...subjectEntries].sort((a, b) => b.marks - a.marks).slice(0, 4)
+    return top4.reduce((s, e) => s + e.marks, 0)
   }
   return getScoreBreakdown(subjectEntries, courseName, courseRequirements).consolidatedScore
 }

@@ -234,15 +234,89 @@ export function readSubjectEntries(subjects) {
 }
 
 export function computeStudentScore(subjectEntries) {
-  // Sum all subjects (max 1250 for 5 subjects × 250), then scale to 1000
-  const totalRaw = subjectEntries.reduce((sum, e) => sum + e.marks, 0)
-  const maxPossible = subjectEntries.length * 250
-  return Math.round((totalRaw / maxPossible) * 1000)
+  // DU takes best 4 subjects out of all entered. Each subject is out of 250.
+  // Total score = sum of top 4 marks (max 1000).
+  const top4 = [...subjectEntries]
+    .sort((a, b) => b.marks - a.marks)
+    .slice(0, 4)
+  return top4.reduce((sum, e) => sum + e.marks, 0)
 }
 
-export function computeStudentScoreMax(subjectEntries) {
-  // Max possible is always 1000 after scaling
-  return 1000
+export function getRequiredSubjectsForCourse(course, courseRequirementIndex) {
+  const eligibility = courseRequirementIndex.get(normalizeCourseName(course))
+  if (!eligibility) return null
+
+  const normalized = String(eligibility).replace(/\s+/g, ' ').trim()
+  const segments = normalized
+    .split(/\s+OR\s+/i)
+    .map((seg) => seg.replace(/Combination\s+[IVX0-9]+:?\s*/gi, '').trim())
+    .filter(Boolean)
+
+  // For each combination segment, extract the specific required subjects
+  const combinations = segments.map((seg) => {
+    const segNorm = normalizeTextForMatch(seg)
+    const required = []
+
+    if (includesToken(segNorm, 'physics')) required.push('Physics')
+    if (includesToken(segNorm, 'chemistry')) required.push('Chemistry')
+    if (includesToken(segNorm, 'mathematics')) required.push('Mathematics / Applied Mathematics')
+    if (includesToken(segNorm, 'biology')) required.push('Biology / Biological Studies / Biotechnology / Biochemistry')
+    if (includesToken(segNorm, 'accountancy')) required.push('Accountancy / Book Keeping')
+    if (includesToken(segNorm, 'massmedia')) required.push('Mass Media / Mass Communication')
+
+    return required
+  })
+
+  // Return the combination with the fewest required subjects (most lenient)
+  return combinations.sort((a, b) => a.length - b.length)[0] || []
+}
+
+export function computeScoreForCourse(course, subjectEntries, courseRequirementIndex) {
+  const eligibility = courseRequirementIndex.get(normalizeCourseName(course))
+  if (!eligibility) return computeStudentScore(subjectEntries)
+
+  const normalized = String(eligibility).replace(/\s+/g, ' ').trim()
+  const segments = normalized
+    .split(/\s+OR\s+/i)
+    .map((seg) => seg.replace(/Combination\s+[IVX0-9]+:?\s*/gi, '').trim())
+    .filter(Boolean)
+
+  const subjectNames = subjectEntries.map((e) => e.subject)
+
+  // Try each combination, pick the one that gives the highest score
+  let bestScore = 0
+
+  for (const seg of segments) {
+    if (!evaluateCombinationRule(seg, subjectNames)) continue
+
+    const segNorm = normalizeTextForMatch(seg)
+
+    // Identify which specific subjects are required by this combination
+    const requiredSubjects = []
+    if (includesToken(segNorm, 'physics')) requiredSubjects.push('Physics')
+    if (includesToken(segNorm, 'chemistry')) requiredSubjects.push('Chemistry')
+    if (includesToken(segNorm, 'mathematics')) requiredSubjects.push('Mathematics / Applied Mathematics')
+    if (includesToken(segNorm, 'biology')) requiredSubjects.push('Biology / Biological Studies / Biotechnology / Biochemistry')
+    if (includesToken(segNorm, 'accountancy')) requiredSubjects.push('Accountancy / Book Keeping')
+    if (includesToken(segNorm, 'massmedia')) requiredSubjects.push('Mass Media / Mass Communication')
+
+    // Pin required subjects, fill remaining slots from top remaining marks
+    const pinned = subjectEntries.filter((e) =>
+      requiredSubjects.some((r) => normalizeSubject(e.subject) === normalizeSubject(r))
+    )
+    const unpinned = subjectEntries
+      .filter((e) => !pinned.includes(e))
+      .sort((a, b) => b.marks - a.marks)
+
+    const slots = 4
+    const remaining = slots - pinned.length
+    const selected = [...pinned, ...unpinned.slice(0, Math.max(0, remaining))]
+    const score = selected.reduce((sum, e) => sum + e.marks, 0)
+
+    if (score > bestScore) bestScore = score
+  }
+
+  return bestScore || computeStudentScore(subjectEntries)
 }
 
 export function loadScript(src) {
