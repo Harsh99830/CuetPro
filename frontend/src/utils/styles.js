@@ -8,7 +8,7 @@ export const dropdownTriggerClass =
   'flex min-h-[42px] w-full min-w-0 items-center justify-between gap-3 rounded-xl border border-[#dbe3f0] bg-white px-3 py-2 text-sm normal-case tracking-normal text-[#101828] shadow-[0_1px_2px_rgba(16,24,40,0.03)] transition hover:border-[#bfd2ee] hover:bg-[#fcfdff] focus:outline-none'
 
 export const dropdownPanelClass =
-  'absolute left-0 right-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-[16px] border border-[#344054] bg-white shadow-[0_20px_40px_rgba(16,24,40,0.12)]'
+  'absolute left-0 top-[calc(100%+6px)] z-30 overflow-hidden rounded-[16px] border border-[#344054] bg-white shadow-[0_20px_40px_rgba(16,24,40,0.12)] min-w-full sm:right-0 w-[calc(100vw-2rem)] sm:w-auto'
 
 export const secondaryIconButtonClass =
   'rounded-lg border border-slate-200 bg-slate-100 px-3 py-2 text-sm font-semibold text-[#0c2754] transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-55'

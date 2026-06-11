@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import jsPDF from 'jspdf'
 import autoTable from 'jspdf-autotable'
 import { ChanceBadge, CollegeCell } from './UI'
@@ -9,6 +9,7 @@ import { supabase } from '../utils/supabase'
 const PAGE_SIZE = 30
 
 export function ResultsSection({ resultRows, setResultRows, summary, exportReady, studentName, isDirty, onRegenerateClick }) {
+  const [showChancesTooltip, setShowChancesTooltip] = useState(false)
   const [draggedIndex, setDraggedIndex] = useState(null)
   const touchDragIndex = useRef(null)
   const touchTargetIndex = useRef(null)
@@ -21,6 +22,14 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
   const [nameError, setNameError] = useState('')
 
   if (!summary && !resultRows.length) return null
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    if (!showChancesTooltip) return
+    function handle() { setShowChancesTooltip(false) }
+    document.addEventListener('click', handle)
+    return () => document.removeEventListener('click', handle)
+  }, [showChancesTooltip])
 
   const totalPages = Math.ceil(resultRows.length / PAGE_SIZE)
   const pageRows = resultRows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
@@ -243,7 +252,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
           </div>
         </div>
 
-        <div id="results-table-wrap" className="overflow-x-auto rounded-[24px] border border-[#e4e7ec]">
+        <div id="results-table-wrap" className="overflow-x-auto overflow-y-visible rounded-[24px] border border-[#e4e7ec]">
           <table className="w-full min-w-0 border-collapse bg-white text-left text-sm">
             <thead className="bg-[#f8fafc] text-xs uppercase tracking-[0.18em] text-[#667085]">
               <tr>
@@ -251,7 +260,27 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                 <th className="px-3 py-3 sm:px-4">College</th>
                 <th className="px-3 py-3 sm:px-4">Course</th>
                 <th className="px-3 py-3 sm:px-4">Prev. Cutoff</th>
-                <th className="px-3 py-3 sm:px-4">Chances</th>
+                <th className="px-3 py-3 sm:px-4">
+                  <div className="flex items-center gap-1">
+                    Chances
+                    <div className="relative">
+                      <svg
+                        viewBox="0 0 20 20"
+                        className="h-3.5 w-3.5 cursor-pointer fill-[#98a2b3] hover:fill-[#0c2754]"
+                        aria-hidden="true"
+                        onClick={(e) => { e.stopPropagation(); setShowChancesTooltip((v) => !v) }}
+                      >
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                      </svg>
+                      {showChancesTooltip && (
+                        <div className="absolute top-full right-0 z-[200] mt-2 w-56 rounded-xl border border-[#e4e7ec] bg-white px-3 py-2 text-[11px] font-normal normal-case leading-relaxed tracking-normal text-[#344054] shadow-lg">
+                          This is based on marks normalization and natural increase of cutoff every year.
+                          <div className="absolute bottom-full right-2 border-4 border-transparent border-b-white" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>

@@ -163,22 +163,22 @@ export function AppShell({ activeSection, onNavClick, children }) {
 
 export function SiteHeader() {
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 rounded-[16px] border border-[#e4e7ec] bg-white px-5 py-5 shadow-[0_2px_8px_rgba(16,24,40,0.05)]">
-      <div>
-        <h1 className="font-['Georgia',_serif] text-xl font-bold text-[#101828] sm:text-2xl">
+    <div className="rounded-[16px] border border-[#e4e7ec] bg-white px-4 py-4 shadow-[0_2px_8px_rgba(16,24,40,0.05)] sm:px-5 sm:py-5">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="font-['Georgia',_serif] text-base font-bold leading-snug text-[#101828] sm:text-2xl">
           DU Preference Sheet Generator
         </h1>
-        <p className="mt-1 text-sm text-[#667085] sm:max-w-2xl">
-          Fill in your profile, subjects, and course preferences — we'll generate a smart preference list based on last year's DU cutoffs.
-        </p>
+        <a href="https://cuetpro.com" target="_blank" rel="noopener noreferrer" className="shrink-0">
+          <img
+            src="/cuet-pro-logo.png"
+            alt="CUET PRO"
+            className="h-10 w-auto object-contain sm:h-16"
+          />
+        </a>
       </div>
-      <div className="shrink-0 self-start sm:self-auto">
-        <img 
-          src="/cuet-pro-logo.png" 
-          alt="CUET PRO" 
-          className="h-16 sm:h-[72px] w-auto object-contain" 
-        />
-      </div>
+      <p className="mt-2 text-xs leading-relaxed text-[#667085] sm:text-sm">
+        Fill in your profile, subjects, and course preferences — we'll generate a smart preference list based on last year's DU cutoffs.
+      </p>
     </div>
   )
 }
