@@ -21,7 +21,42 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
   const [userName, setUserName] = useState('')
   const [nameError, setNameError] = useState('')
 
-  if (!summary && !resultRows.length) return null
+  const [showManualModal, setShowManualModal] = useState(false)
+  const [manualCourse, setManualCourse] = useState('')
+  const [manualCollege, setManualCollege] = useState('')
+  const [manualPosition, setManualPosition] = useState('')
+  const [manualError, setManualError] = useState('')
+
+  function handleManualApply() {
+    if (!manualCourse.trim()) { setManualError('Please enter a course name.'); return }
+    if (!manualCollege.trim()) { setManualError('Please enter a college name.'); return }
+    const pos = parseInt(manualPosition, 10)
+    const maxPos = resultRows.length + 1
+    if (manualPosition !== '' && (isNaN(pos) || pos < 1 || pos > maxPos)) {
+      setManualError(`Position must be between 1 and ${maxPos}.`); return
+    }
+    const newRow = {
+      college: manualCollege.trim(),
+      course: manualCourse.trim(),
+      requiredCutoff: null,
+      studentScore: null,
+      chance: null,
+      smartScore: 0,
+      collegeRank: 999,
+      manual: true,
+    }
+    setResultRows((current) => {
+      const next = [...current]
+      const insertAt = manualPosition !== '' ? pos - 1 : next.length
+      next.splice(insertAt, 0, newRow)
+      return next
+    })
+    setManualCourse('')
+    setManualCollege('')
+    setManualPosition('')
+    setManualError('')
+    setShowManualModal(false)
+  }
 
   // Close tooltip on outside click
   useEffect(() => {
@@ -30,6 +65,8 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
     document.addEventListener('click', handle)
     return () => document.removeEventListener('click', handle)
   }, [showChancesTooltip])
+
+  if (!summary && !resultRows.length) return null
 
   const totalPages = Math.ceil(resultRows.length / PAGE_SIZE)
   const pageRows = resultRows.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE)
@@ -55,36 +92,30 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
 
   async function handleConfirm() {
     let hasError = false
-    if (!userName.trim()) {
-      setNameError('Please enter your name.')
-      hasError = true
-    }
-    if (!/^\d{10}$/.test(mobile)) {
-      setMobileError('Please enter a valid 10-digit mobile number.')
-      hasError = true
-    }
+    if (!userName.trim()) { setNameError('Please enter your name.'); hasError = true }
+    if (!/^\d{10}$/.test(mobile)) { setMobileError('Please enter a valid 10-digit mobile number.'); hasError = true }
     if (hasError) return
 
     setIsDownloading(true)
     setShowModal(false)
 
-    // Save lead to Supabase
+    // Fire and forget — never block download on Supabase
     if (supabase) {
-      try {
-        await supabase.from('pdf_leads').insert([{
-          name: userName.trim(),
-          mobile,
-          student_name: studentName || null,
-          downloaded_at: new Date().toISOString(),
-        }])
-      } catch (err) {
-        console.error('Supabase insert error:', err)
-      }
+      supabase.from('pdf_leads').insert([{
+        name: userName.trim(), mobile,
+        student_name: studentName || null,
+        downloaded_at: new Date().toISOString(),
+      }]).then(({ error }) => { if (error) console.error('Supabase insert error:', error) })
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 600))
-    await triggerPdfDownload()
-    setIsDownloading(false)
+    try {
+      await triggerPdfDownload()
+    } catch (err) {
+      console.error('PDF generation error:', err)
+      alert('Failed to generate PDF. Please try again.')
+    } finally {
+      setIsDownloading(false)
+    }
   }
 
   function addWatermarkToAllPages(doc, watermark) {
@@ -109,33 +140,35 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
     // Pre-render the rotated logo onto a canvas so it centres perfectly on every page
     let watermark = null
     try {
-      watermark = await new Promise((resolve) => {
-        const img = new Image()
-        img.onload = () => {
-          const angle = 45 * Math.PI / 180
-          const cos = Math.cos(angle)
-          const sin = Math.sin(angle)
-          const scale = 2 // 2× for print sharpness
-          const imgW = 380 * scale
-          const imgH = Math.round(imgW * img.naturalHeight / img.naturalWidth)
-          // Canvas must be big enough to contain the rotated image
-          const canvasW = Math.ceil(imgW * cos + imgH * sin)
-          const canvasH = Math.ceil(imgW * sin + imgH * cos)
-          const canvas = document.createElement('canvas')
-          canvas.width = canvasW
-          canvas.height = canvasH
-          const ctx = canvas.getContext('2d')
-          ctx.globalAlpha = 0.1
-          ctx.translate(canvasW / 2, canvasH / 2)
-          ctx.rotate(angle)
-          ctx.drawImage(img, -imgW / 2, -imgH / 2, imgW, imgH)
-          resolve({ dataUrl: canvas.toDataURL('image/png'), width: canvasW / scale, height: canvasH / scale })
-        }
-        img.onerror = () => resolve(null)
-        img.src = '/cuet-pro-logo.png'
-      })
+      watermark = await Promise.race([
+        new Promise((resolve) => {
+          const img = new Image()
+          img.onload = () => {
+            const angle = 45 * Math.PI / 180
+            const cos = Math.cos(angle)
+            const sin = Math.sin(angle)
+            const scale = 2
+            const imgW = 380 * scale
+            const imgH = Math.round(imgW * img.naturalHeight / img.naturalWidth)
+            const canvasW = Math.ceil(imgW * cos + imgH * sin)
+            const canvasH = Math.ceil(imgW * sin + imgH * cos)
+            const canvas = document.createElement('canvas')
+            canvas.width = canvasW
+            canvas.height = canvasH
+            const ctx = canvas.getContext('2d')
+            ctx.globalAlpha = 0.1
+            ctx.translate(canvasW / 2, canvasH / 2)
+            ctx.rotate(angle)
+            ctx.drawImage(img, -imgW / 2, -imgH / 2, imgW, imgH)
+            resolve({ dataUrl: canvas.toDataURL('image/png'), width: canvasW / scale, height: canvasH / scale })
+          }
+          img.onerror = () => resolve(null)
+          img.src = '/cuet-pro-logo.png'
+        }),
+        new Promise((resolve) => setTimeout(() => resolve(null), 3000)) // 3s timeout fallback
+      ])
     } catch (e) {
-      console.error('Failed to create watermark:', e)
+      console.error('Watermark error:', e)
     }
     const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: 'a4' })
     doc.setFontSize(13)
@@ -148,7 +181,7 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
         idx + 1,
         row.college,
         row.course,
-        row.requiredCutoff.toFixed(2),
+        row.requiredCutoff != null ? row.requiredCutoff.toFixed(2) : '—',
         row.chance === null ? 'NA' : chanceBadgeClass(row.chance) === 'safe' ? 'High' : chanceBadgeClass(row.chance) === 'match' ? 'Moderate' : 'Low',
       ]),
       startY: 64,
@@ -172,7 +205,55 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
           </div>
         </div>
       )}
-      {/* Mobile number overlay */}
+      {/* Manual preference modal */}
+      {showManualModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
+          <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-[0_24px_48px_rgba(0,0,0,0.18)]">
+            <h3 className="mb-1 text-lg font-semibold text-[#101828]">Add Preference Manually</h3>
+            <p className="mb-5 text-sm text-[#667085]">This entry won't show cutoff or chances.</p>
+            <div className="grid gap-3">
+              <input
+                type="text"
+                placeholder="Course name"
+                value={manualCourse}
+                onChange={(e) => { setManualCourse(e.target.value); setManualError('') }}
+                className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
+              />
+              <input
+                type="text"
+                placeholder="College name"
+                value={manualCollege}
+                onChange={(e) => { setManualCollege(e.target.value); setManualError('') }}
+                className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
+              />
+              <input
+                type="number"
+                placeholder={`Position (1–${resultRows.length + 1}), optional`}
+                value={manualPosition}
+                onChange={(e) => { setManualPosition(e.target.value); setManualError('') }}
+                className="w-full rounded-2xl border border-[#dbe3f0] bg-white px-4 py-3 text-sm text-[#101828] outline-none transition placeholder:text-[#98a2b3] focus:border-[#bfd2ee] focus:ring-4 focus:ring-[#3b82f6]/10"
+              />
+              {manualError && <p className="-mt-1 text-[12px] font-medium text-red-500">{manualError}</p>}
+            </div>
+            <div className="mt-5 flex gap-3">
+              <button
+                type="button"
+                onClick={() => { setShowManualModal(false); setManualError('') }}
+                className="flex-1 rounded-2xl border border-[#e4e7ec] bg-[#f2f4f7] px-4 py-3 text-sm font-semibold text-[#667085] transition hover:bg-[#e9edf3]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleManualApply}
+                className="flex-1 rounded-2xl bg-[#0c2754] px-4 py-3 text-sm font-semibold text-white transition hover:bg-[#0a2146]"
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {showModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="w-full max-w-sm rounded-[24px] bg-white p-6 shadow-[0_24px_48px_rgba(0,0,0,0.18)]">
@@ -231,6 +312,14 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
         <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-xs font-bold text-[#101828] sm:text-sm">Drag or touch-hold a college row to shift it up or down in your final preference order.</p>
           <div className="flex flex-wrap gap-3">
+            <button
+              type="button"
+              className="flex w-full items-center justify-center gap-2 rounded-2xl border border-[#e4e7ec] bg-white px-4 py-2.5 text-sm font-semibold text-[#344054] transition hover:bg-[#f8fafc] sm:w-auto"
+              disabled={!exportReady}
+              onClick={() => { setManualCourse(''); setManualCollege(''); setManualPosition(''); setManualError(''); setShowManualModal(true) }}
+            >
+              + Add Preference Manually
+            </button>
             <button
               type="button"
               className={`${addToListButtonClass} flex w-full items-center justify-center gap-2 sm:w-auto`}
@@ -335,9 +424,9 @@ export function ResultsSection({ resultRows, setResultRows, summary, exportReady
                         <CollegeCell college={row.college} />
                       </td>
                       <td className="px-3 py-3 text-xs sm:px-4 sm:text-sm">{row.course}</td>
-                      <td className="px-3 py-3 sm:px-4">{row.requiredCutoff.toFixed(2)}</td>
+                      <td className="px-3 py-3 sm:px-4">{row.manual ? '—' : row.requiredCutoff?.toFixed(2)}</td>
                       <td className="px-3 py-3 sm:px-4">
-                        <ChanceBadge chance={row.chance} tone={chanceBadgeClass(row.chance)} />
+                        {row.manual ? <span className="text-xs text-[#98a2b3]">Manual entry</span> : <ChanceBadge chance={row.chance} tone={chanceBadgeClass(row.chance)} />}
                       </td>
                     </tr>
                   )
