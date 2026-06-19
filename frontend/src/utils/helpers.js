@@ -148,13 +148,15 @@ export function scoreCoursePreferenceOrder(course, selectedSubjects) {
 }
 
 export function classifyChance(studentScore, requiredCutoff) {
-  return Math.max(1, Math.min(99, Math.round(50 + (studentScore - requiredCutoff) / 2)))
+  if (studentScore > requiredCutoff + 20) return 'high'
+  if (studentScore >= requiredCutoff) return 'moderate'
+  return 'low'
 }
 
 export function chanceBadgeClass(chance) {
   if (chance === null || chance === undefined) return 'na'
-  if (chance >= 75) return 'safe'
-  if (chance >= 45) return 'match'
+  if (chance === 'high') return 'safe'
+  if (chance === 'moderate') return 'match'
   return 'dream'
 }
 
