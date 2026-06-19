@@ -225,7 +225,7 @@ function App() {
       : prioritizeGeneratedRows(possible)
 
     setGeneratedScore(`${studentScore}/1000`)
-    setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Estimated CUET Score: ${studentScore}/1000`)
+    setSummary(`${form.name} | Stream: ${form.stream} | Category: ${form.category} | Results: ${form.displayMode === 'course-first' ? 'Course First' : 'College First'} | Raw Score: ${studentScore}/1000`)
     setLastStudentName(form.name || 'student')
     setExportReady(orderedPossible.length > 0)
     setResultRows(orderedPossible)
@@ -302,7 +302,7 @@ function App() {
         <section className="grid grid-cols-2 gap-3 md:grid-cols-4">
           <MetricCard label="Subjects" value={`${selectedSubjectCount}/5`} icon="subjects" />
           <MetricCard label="Preferences" value={String(preferences.length)} icon="preferences" />
-          <MetricCard label="Est. Score" value={generatedScore} icon="score" />
+          <MetricCard label="Raw Score" value={generatedScore} icon="score" />
           <MetricCard label="Results" value={String(resultRows.length)} icon="generated-rows" />
         </section>
 

@@ -93,9 +93,8 @@ export function SubjectsSection({ subjects, onUpdate }) {
               <div className="grid gap-1">
                 <input
                   className={marksHasError ? errorInputClass : validInputClass}
-                  type="number"
-                  min="0"
-                  max="250"
+                  type="text"
+                  inputMode="numeric"
                   placeholder="Marks (0-250)"
                   value={item.marks}
                   onChange={(e) => onUpdate(index, 'marks', e.target.value)}
